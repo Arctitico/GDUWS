@@ -3,16 +3,19 @@ package com.gduws.view;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Graphics2D;
+import java.awt.Point;
 import java.awt.RenderingHints;
+import java.awt.Stroke;
 
 import com.gduws.model.Faction;
 import com.gduws.model.GameMap;
+import com.gduws.model.IntelBoard;
 import com.gduws.model.MovementType;
 import com.gduws.model.TerrainType;
 import com.gduws.model.Unit;
 import com.gduws.model.World;
 
-/** 渲染战场：地形网格 + 单位（M1 阶段用色块/圆形占位）。 */
+/** 渲染战场：地形网格 + 单位 + 调试覆盖层（视野/路径/已知敌情）。 */
 public class GameRenderer {
 
     private static final Color PLAIN_COLOR    = new Color(96, 152, 84);
@@ -22,14 +25,35 @@ public class GameRenderer {
 
     private static final Color PLAYER_COLOR = new Color(70, 130, 220);
     private static final Color ENEMY_COLOR  = new Color(210, 70, 70);
+    private static final Color SELECT_COLOR = new Color(255, 220, 60);
+
+    private static final Color PATH_COLOR   = new Color(255, 255, 255, 160);
+    private static final Color SIGHT_COLOR  = new Color(255, 255, 255, 35);
+    private static final Color INTEL_COLOR  = new Color(255, 200, 0, 220);
+
+    /** 是否绘制玩家方调试覆盖层（视野圈、路径、已知敌情）。 */
+    public boolean showOverlay = true;
+    /** 当前选中的单位（用于高亮）。 */
+    public Unit selectedUnit;
 
     public void render(Graphics2D g, World world) {
         g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         drawTerrain(g, world.map);
+
+        if (showOverlay) {
+            drawVisionCircles(g, world);
+            drawPaths(g, world);
+        }
+
         for (Unit u : world.units) {
             drawUnit(g, u);
         }
+
+        if (showOverlay) {
+            drawIntel(g, world, Faction.PLAYER);
+        }
     }
+
 
     private void drawTerrain(Graphics2D g, GameMap map) {
         int ts = map.tileSize;
@@ -69,10 +93,65 @@ public class GameRenderer {
         g.setStroke(new BasicStroke(2f));
         g.drawOval(x, y, d, d);
 
+        // 朝向指示线
+        int fx = (int) (u.x + Math.cos(u.facing) * r);
+        int fy = (int) (u.y + Math.sin(u.facing) * r);
+        g.drawLine((int) u.x, (int) u.y, fx, fy);
+
+        // 选中高亮
+        if (u == selectedUnit) {
+            g.setColor(SELECT_COLOR);
+            g.setStroke(new BasicStroke(2f));
+            g.drawOval(x - 3, y - 3, d + 6, d + 6);
+        }
+
         // 层标记字母：L/W/A/U
         g.setColor(Color.WHITE);
         String mark = layerMark(u.def.movementType);
         g.drawString(mark, (int) (u.x - 4), (int) (u.y + 4));
+    }
+
+    private void drawVisionCircles(Graphics2D g, World world) {
+        g.setColor(SIGHT_COLOR);
+        for (Unit u : world.units) {
+            if (u.faction != Faction.PLAYER) continue;
+            int s = u.def.sightRange;
+            if (s <= 0) continue;
+            g.fillOval((int) (u.x - s), (int) (u.y - s), s * 2, s * 2);
+        }
+    }
+
+    private void drawPaths(Graphics2D g, World world) {
+        Stroke old = g.getStroke();
+        g.setStroke(new BasicStroke(1.5f));
+        g.setColor(PATH_COLOR);
+        for (Unit u : world.units) {
+            if (u.faction != Faction.PLAYER || u.path == null || u.path.isEmpty()) continue;
+            double px = u.x;
+            double py = u.y;
+            for (Point p : u.path) {
+                double tx = world.map.cellCenterX(p.x);
+                double ty = world.map.cellCenterY(p.y);
+                g.drawLine((int) px, (int) py, (int) tx, (int) ty);
+                px = tx;
+                py = ty;
+            }
+        }
+        g.setStroke(old);
+    }
+
+    private void drawIntel(Graphics2D g, World world, Faction viewer) {
+        IntelBoard board = world.intelOf(viewer);
+        if (board == null) return;
+        Stroke old = g.getStroke();
+        g.setStroke(new BasicStroke(2f));
+        g.setColor(INTEL_COLOR);
+        for (IntelBoard.IntelEntry e : board.knownEnemies()) {
+            int sz = 16;
+            g.drawRect((int) (e.x - sz / 2), (int) (e.y - sz / 2), sz, sz);
+            g.drawString("?", (int) (e.x - 3), (int) (e.y + 4));
+        }
+        g.setStroke(old);
     }
 
     private static String layerMark(MovementType mt) {

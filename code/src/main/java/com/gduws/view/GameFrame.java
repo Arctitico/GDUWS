@@ -22,6 +22,7 @@ import javax.swing.JPanel;
 import javax.swing.JToggleButton;
 import javax.swing.SwingConstants;
 
+import com.gduws.control.GameLoop;
 import com.gduws.control.GameState;
 import com.gduws.control.GameStateManager;
 import com.gduws.data.LevelLoader;
@@ -40,6 +41,7 @@ public class GameFrame extends JFrame {
     private final GameStateManager stateManager = new GameStateManager();
     private final DeployController deploy;
     private final GamePanel gamePanel;
+    private final GameLoop gameLoop;
 
     private final Map<String, JToggleButton> unitButtons = new LinkedHashMap<>();
     private final JLabel statusLabel = new JLabel();
@@ -65,7 +67,8 @@ public class GameFrame extends JFrame {
 
         this.deploy = new DeployController(world, unitDefs, level);
         this.gamePanel = new GamePanel(world);
-        gamePanel.addMouseListener(new InputHandler(deploy, stateManager, this::refreshSidebar));
+        gamePanel.addMouseListener(new InputHandler(deploy, stateManager, this::refreshSidebar, gamePanel));
+        this.gameLoop = new GameLoop(world, stateManager, gamePanel::repaint);
 
         add(gamePanel, BorderLayout.CENTER);
         add(buildSidebar(level), BorderLayout.EAST);
@@ -152,7 +155,8 @@ public class GameFrame extends JFrame {
         if (stateManager.is(GameState.DEPLOY)) {
             statusLabel.setText("<html>布兵中。" + safe(deploy.lastMessage()) + "</html>");
         } else if (stateManager.is(GameState.BATTLE)) {
-            statusLabel.setText("<html><b>战斗已开始</b>（单位静止，自动推演见后续 Step）</html>");
+            statusLabel.setText("<html><b>战斗已开始</b>。左键己方单位选中，再左键空地下达移动指令；右键取消。<br>"
+                + "侦察单位移动靠近敌人时，已知敌情会显示为黄色 ? 标记。</html>");
         }
         gamePanel.repaint();
     }
@@ -160,6 +164,7 @@ public class GameFrame extends JFrame {
     private void startBattle() {
         stateManager.setState(GameState.BATTLE);
         startButton.setEnabled(false);
+        gameLoop.start();
         refreshSidebar();
     }
 

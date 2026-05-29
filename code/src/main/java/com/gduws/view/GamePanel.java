@@ -19,6 +19,14 @@ public class GamePanel extends JPanel {
         setPreferredSize(new Dimension(world.map.pixelWidth(), world.map.pixelHeight()));
     }
 
+    public GameRenderer renderer() {
+        return renderer;
+    }
+
+    public World world() {
+        return world;
+    }
+
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
