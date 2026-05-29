@@ -2,6 +2,7 @@ package com.gduws.control;
 
 import javax.swing.Timer;
 
+import com.gduws.model.Faction;
 import com.gduws.model.World;
 
 /**
@@ -18,6 +19,7 @@ public final class GameLoop {
     private final GameStateManager stateManager;
     private final Runnable afterTick;
     private final Timer timer;
+    private java.util.function.Consumer<Faction> onVictory;
 
     public GameLoop(World world, GameStateManager stateManager, Runnable afterTick) {
         this.world = world;
@@ -25,6 +27,10 @@ public final class GameLoop {
         this.afterTick = afterTick;
         this.timer = new Timer(STEP_MS, e -> step());
         this.timer.setCoalesce(true);
+    }
+
+    public void setOnVictory(java.util.function.Consumer<Faction> onVictory) {
+        this.onVictory = onVictory;
     }
 
     public void start() {
@@ -40,6 +46,12 @@ public final class GameLoop {
     private void step() {
         if (stateManager.is(GameState.BATTLE)) {
             world.tick();
+            Faction w = world.winner();
+            if (w != null) {
+                stateManager.setState(GameState.RESULT);
+                timer.stop();
+                if (onVictory != null) onVictory.accept(w);
+            }
         }
         if (afterTick != null) {
             afterTick.run();

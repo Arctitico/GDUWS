@@ -30,6 +30,11 @@ public class IntelBoard {
         known.remove(enemy);
     }
 
+    /** 清空所有已知敌情（用于重置） */
+    public void clearAll() {
+        known.clear();
+    }
+
     public boolean hasAnyEnemy() {
         return !known.isEmpty();
     }

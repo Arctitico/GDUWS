@@ -22,10 +22,15 @@ public class DeployController {
     public DeployController(World world, UnitDefLoader unitDefs, LevelDef level) {
         this.world = world;
         this.unitDefs = unitDefs;
+        reset(level);
+    }
+
+    /** 重置预算与选中（用于"重新挑战"/返回选关重入） */
+    public void reset(LevelDef level) {
+        remaining.clear();
         remaining.putAll(level.playerBudget);
-        if (!remaining.isEmpty()) {
-            selectedUnitId = remaining.keySet().iterator().next();
-        }
+        selectedUnitId = remaining.isEmpty() ? null : remaining.keySet().iterator().next();
+        lastMessage = "";
     }
 
     public Map<String, Integer> remaining() {

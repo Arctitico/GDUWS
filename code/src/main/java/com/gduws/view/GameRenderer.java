@@ -7,6 +7,7 @@ import java.awt.Point;
 import java.awt.RenderingHints;
 import java.awt.Stroke;
 
+import com.gduws.model.CombatSystem;
 import com.gduws.model.Faction;
 import com.gduws.model.GameMap;
 import com.gduws.model.IntelBoard;
@@ -45,8 +46,13 @@ public class GameRenderer {
             drawPaths(g, world);
         }
 
+        drawShots(g, world);
+
         for (Unit u : world.units) {
             drawUnit(g, u);
+        }
+        for (Unit u : world.units) {
+            drawHpBar(g, u);
         }
 
         if (showOverlay) {
@@ -150,6 +156,39 @@ public class GameRenderer {
             int sz = 16;
             g.drawRect((int) (e.x - sz / 2), (int) (e.y - sz / 2), sz, sz);
             g.drawString("?", (int) (e.x - 3), (int) (e.y + 4));
+        }
+        g.setStroke(old);
+    }
+
+    private void drawHpBar(Graphics2D g, Unit u) {
+        int max = u.def.maxHp;
+        if (max <= 0) return;
+        double ratio = Math.max(0, Math.min(1.0, (double) u.hp / max));
+        int r = (int) Math.max(6, u.def.radius);
+        int barW = r * 2 + 4;
+        int barH = 3;
+        int x = (int) (u.x - barW / 2);
+        int y = (int) (u.y - r - 8);
+        g.setColor(new Color(0, 0, 0, 160));
+        g.fillRect(x - 1, y - 1, barW + 2, barH + 2);
+        g.setColor(new Color(60, 60, 60));
+        g.fillRect(x, y, barW, barH);
+        Color hpColor = ratio > 0.5 ? new Color(80, 200, 80)
+                       : ratio > 0.25 ? new Color(230, 200, 60)
+                       : new Color(220, 60, 60);
+        g.setColor(hpColor);
+        g.fillRect(x, y, (int) (barW * ratio), barH);
+    }
+
+    private void drawShots(Graphics2D g, World world) {
+        Stroke old = g.getStroke();
+        g.setStroke(new BasicStroke(1.5f));
+        for (CombatSystem.ShotEvent s : world.combatSystem().recentShots) {
+            Color c = (s.shooterFaction == Faction.PLAYER)
+                ? new Color(120, 200, 255, 220)
+                : new Color(255, 180, 120, 220);
+            g.setColor(c);
+            g.drawLine((int) s.sx, (int) s.sy, (int) s.tx, (int) s.ty);
         }
         g.setStroke(old);
     }

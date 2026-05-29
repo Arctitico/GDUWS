@@ -1,12 +1,12 @@
 package com.gduws.view;
 
 import java.awt.BorderLayout;
+import java.awt.CardLayout;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
 import java.io.IOException;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -35,32 +35,38 @@ import com.gduws.model.Unit;
 import com.gduws.model.UnitDef;
 import com.gduws.model.World;
 
-/** 主窗口：加载关卡数据，组织布兵界面与战斗态切换。 */
+/** 主窗口：串联 选关 → 布兵 → 战斗 → 结算 全流程 */
 public class GameFrame extends JFrame {
 
     private final GameStateManager stateManager = new GameStateManager();
+    private final UnitDefLoader unitDefs = new UnitDefLoader();
+    private final LevelDef level;
+    private final World world;
     private final DeployController deploy;
     private final GamePanel gamePanel;
     private final GameLoop gameLoop;
 
     private final Map<String, JToggleButton> unitButtons = new LinkedHashMap<>();
     private final JLabel statusLabel = new JLabel();
+    private final JLabel counterLabel = new JLabel();
     private JButton startButton;
+
+    private final JPanel sidebarCards = new JPanel(new CardLayout());
+    private static final String CARD_SELECT = "SELECT";
+    private static final String CARD_DEPLOY = "DEPLOY";
+    private static final String CARD_RESULT = "RESULT";
+    private final JLabel resultTitle = new JLabel();
+    private final JLabel resultStats = new JLabel();
 
     public GameFrame() {
         setTitle("GDUWS — Ghost Domains: Unmanned Warfare Sim");
         setDefaultCloseOperation(EXIT_ON_CLOSE);
 
-        // ---- 加载数据 ----
-        UnitDefLoader unitDefs = new UnitDefLoader();
-        LevelDef level;
-        World world;
         try {
             unitDefs.loadDirectory(Paths.get("data", "units"));
             level = new LevelLoader().loadFile(Paths.get("data", "levels", "level_01.json"));
             GameMap map = new MapLoader().loadFile(Paths.get(level.mapPath));
             world = new World(map);
-            placeEnemyUnits(world, level, unitDefs);
         } catch (IOException e) {
             throw new RuntimeException("加载关卡数据失败（请在 code/ 目录下运行）", e);
         }
@@ -69,16 +75,17 @@ public class GameFrame extends JFrame {
         this.gamePanel = new GamePanel(world);
         gamePanel.addMouseListener(new InputHandler(deploy, stateManager, this::refreshSidebar, gamePanel));
         this.gameLoop = new GameLoop(world, stateManager, gamePanel::repaint);
+        gameLoop.setOnVictory(this::onVictory);
 
         add(gamePanel, BorderLayout.CENTER);
-        add(buildSidebar(level), BorderLayout.EAST);
+        add(buildSidebar(), BorderLayout.EAST);
 
         refreshSidebar();
         pack();
         setLocationRelativeTo(null);
     }
 
-    private void placeEnemyUnits(World world, LevelDef level, UnitDefLoader unitDefs) {
+    private void placeEnemyUnits() {
         for (LevelDef.PlacedUnit p : level.enemyUnits) {
             UnitDef def = unitDefs.get(p.unitId);
             double cx = world.map.cellCenterX(p.col);
@@ -87,57 +94,144 @@ public class GameFrame extends JFrame {
         }
     }
 
-    private JPanel buildSidebar(LevelDef level) {
-        JPanel sidebar = new JPanel();
-        sidebar.setLayout(new BoxLayout(sidebar, BoxLayout.Y_AXIS));
-        sidebar.setBorder(BorderFactory.createEmptyBorder(10, 12, 10, 12));
-        sidebar.setPreferredSize(new Dimension(240, gamePanel.getPreferredSize().height));
+    private JPanel buildSidebar() {
+        sidebarCards.setBorder(BorderFactory.createEmptyBorder(10, 12, 10, 12));
+        sidebarCards.setPreferredSize(new Dimension(260, gamePanel.getPreferredSize().height));
+        sidebarCards.add(buildSelectPanel(), CARD_SELECT);
+        sidebarCards.add(buildDeployPanel(), CARD_DEPLOY);
+        sidebarCards.add(buildResultPanel(), CARD_RESULT);
+        showCard(CARD_SELECT);
+        return sidebarCards;
+    }
 
-        JLabel title = new JLabel(level.name + "（布兵阶段）");
+    private JPanel buildSelectPanel() {
+        JPanel p = new JPanel();
+        p.setLayout(new BoxLayout(p, BoxLayout.Y_AXIS));
+        JLabel title = new JLabel("选择关卡");
+        title.setFont(title.getFont().deriveFont(Font.BOLD, 16f));
+        p.add(title);
+        p.add(Box.createVerticalStrut(12));
+
+        JButton btn = new JButton(level.name);
+        btn.setAlignmentX(LEFT_ALIGNMENT);
+        btn.setMaximumSize(new Dimension(240, 40));
+        btn.addActionListener(e -> enterDeploy());
+        p.add(btn);
+
+        p.add(Box.createVerticalStrut(20));
+        p.add(new JLabel("<html><i>选择关卡后进入布兵阶段</i></html>"));
+        p.add(Box.createVerticalGlue());
+        return p;
+    }
+
+    private JPanel buildDeployPanel() {
+        JPanel p = new JPanel();
+        p.setLayout(new BoxLayout(p, BoxLayout.Y_AXIS));
+
+        JLabel title = new JLabel(level.name);
         title.setFont(title.getFont().deriveFont(Font.BOLD, 15f));
-        sidebar.add(title);
-        sidebar.add(Box.createVerticalStrut(4));
-        sidebar.add(new JLabel("左键放置 · 右键移除"));
-        sidebar.add(Box.createVerticalStrut(10));
-        sidebar.add(new JLabel("可用单位："));
+        p.add(title);
+        p.add(Box.createVerticalStrut(4));
+        p.add(new JLabel("左键放置 · 右键移除"));
+        p.add(Box.createVerticalStrut(10));
+        p.add(new JLabel("可用单位："));
 
         ButtonGroup group = new ButtonGroup();
         boolean first = true;
         for (String unitId : level.playerBudget.keySet()) {
-            UnitDef def = deploy.defOf(unitId);
             JToggleButton btn = new JToggleButton();
             btn.setAlignmentX(LEFT_ALIGNMENT);
-            btn.setMaximumSize(new Dimension(220, 30));
-            btn.addActionListener(e -> {
-                deploy.selectUnit(unitId);
-                refreshSidebar();
-            });
-            if (first) {
-                btn.setSelected(true);
-                first = false;
-            }
+            btn.setMaximumSize(new Dimension(240, 30));
+            btn.addActionListener(e -> { deploy.selectUnit(unitId); refreshSidebar(); });
+            if (first) { btn.setSelected(true); first = false; }
             group.add(btn);
             unitButtons.put(unitId, btn);
-            sidebar.add(Box.createVerticalStrut(4));
-            sidebar.add(btn);
+            p.add(Box.createVerticalStrut(4));
+            p.add(btn);
         }
 
-        sidebar.add(Box.createVerticalStrut(16));
+        p.add(Box.createVerticalStrut(16));
         startButton = new JButton("开始战斗");
         startButton.setAlignmentX(LEFT_ALIGNMENT);
-        startButton.setMaximumSize(new Dimension(220, 36));
+        startButton.setMaximumSize(new Dimension(240, 36));
         startButton.addActionListener(e -> startBattle());
-        sidebar.add(startButton);
+        p.add(startButton);
 
-        sidebar.add(Box.createVerticalStrut(12));
+        p.add(Box.createVerticalStrut(10));
+        counterLabel.setHorizontalAlignment(SwingConstants.LEFT);
+        JPanel cWrap = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        cWrap.add(counterLabel);
+        p.add(cWrap);
+
+        p.add(Box.createVerticalStrut(8));
         statusLabel.setHorizontalAlignment(SwingConstants.LEFT);
         statusLabel.setForeground(new Color(40, 40, 40));
-        JPanel statusWrap = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
-        statusWrap.add(statusLabel);
-        sidebar.add(statusWrap);
+        JPanel sWrap = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        sWrap.add(statusLabel);
+        p.add(sWrap);
 
-        sidebar.add(Box.createVerticalGlue());
-        return sidebar;
+        p.add(Box.createVerticalGlue());
+        return p;
+    }
+
+    private JPanel buildResultPanel() {
+        JPanel p = new JPanel();
+        p.setLayout(new BoxLayout(p, BoxLayout.Y_AXIS));
+        resultTitle.setFont(resultTitle.getFont().deriveFont(Font.BOLD, 18f));
+        p.add(resultTitle);
+        p.add(Box.createVerticalStrut(10));
+        p.add(resultStats);
+        p.add(Box.createVerticalStrut(20));
+
+        JButton retry = new JButton("重新挑战");
+        retry.setAlignmentX(LEFT_ALIGNMENT);
+        retry.setMaximumSize(new Dimension(240, 36));
+        retry.addActionListener(e -> restartLevel());
+        p.add(retry);
+
+        p.add(Box.createVerticalStrut(8));
+        JButton back = new JButton("返回选关");
+        back.setAlignmentX(LEFT_ALIGNMENT);
+        back.setMaximumSize(new Dimension(240, 36));
+        back.addActionListener(e -> backToSelect());
+        p.add(back);
+
+        p.add(Box.createVerticalStrut(8));
+        JButton exit = new JButton("退出");
+        exit.setAlignmentX(LEFT_ALIGNMENT);
+        exit.setMaximumSize(new Dimension(240, 36));
+        exit.addActionListener(e -> System.exit(0));
+        p.add(exit);
+
+        p.add(Box.createVerticalGlue());
+        return p;
+    }
+
+    private void showCard(String card) {
+        ((CardLayout) sidebarCards.getLayout()).show(sidebarCards, card);
+    }
+
+    private void enterDeploy() {
+        world.reset();
+        placeEnemyUnits();
+        deploy.reset(level);
+        stateManager.setState(GameState.DEPLOY);
+        if (startButton != null) startButton.setEnabled(true);
+        gamePanel.renderer().selectedUnit = null;
+        showCard(CARD_DEPLOY);
+        refreshSidebar();
+    }
+
+    private void restartLevel() {
+        enterDeploy();
+    }
+
+    private void backToSelect() {
+        gameLoop.stop();
+        world.reset();
+        stateManager.setState(GameState.LEVEL_SELECT);
+        showCard(CARD_SELECT);
+        gamePanel.repaint();
     }
 
     private void refreshSidebar() {
@@ -152,20 +246,36 @@ public class GameFrame extends JFrame {
                 e.getValue().setSelected(true);
             }
         }
+        int pAlive = world.countAlive(Faction.PLAYER);
+        int eAlive = world.countAlive(Faction.ENEMY);
+        counterLabel.setText("<html>剩余兵力：<br>己方 <b>" + pAlive + "</b> · 敌方 <b>" + eAlive + "</b></html>");
         if (stateManager.is(GameState.DEPLOY)) {
             statusLabel.setText("<html>布兵中。" + safe(deploy.lastMessage()) + "</html>");
         } else if (stateManager.is(GameState.BATTLE)) {
-            statusLabel.setText("<html><b>战斗已开始</b>。左键己方单位选中，再左键空地下达移动指令；右键取消。<br>"
-                + "侦察单位移动靠近敌人时，已知敌情会显示为黄色 ? 标记。</html>");
+            statusLabel.setText("<html><b>战斗自动进行中</b>。一方损失 ≥90% 即结束。</html>");
         }
         gamePanel.repaint();
     }
 
     private void startBattle() {
         stateManager.setState(GameState.BATTLE);
+        world.startBattle();
         startButton.setEnabled(false);
+        gamePanel.renderer().selectedUnit = null;
         gameLoop.start();
         refreshSidebar();
+    }
+
+    private void onVictory(Faction winner) {
+        int p = world.countAlive(Faction.PLAYER);
+        int en = world.countAlive(Faction.ENEMY);
+        boolean playerWin = winner == Faction.PLAYER;
+        resultTitle.setText(playerWin ? "胜利！" : "失败…");
+        resultTitle.setForeground(playerWin ? new Color(40, 130, 40) : new Color(180, 40, 40));
+        resultStats.setText("<html>己方剩余：" + p + " / " + world.initialCountOf(Faction.PLAYER)
+            + "<br>敌方剩余：" + en + " / " + world.initialCountOf(Faction.ENEMY) + "</html>");
+        showCard(CARD_RESULT);
+        gamePanel.repaint();
     }
 
     private static String safe(String s) {
