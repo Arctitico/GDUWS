@@ -1,0 +1,11 @@
+use-java13.ps1
+
+GDUWS/code/out/
+*.class
+
+.idea/
+*.iml
+.vscode/
+
+Thumbs.db
+.DS_Store

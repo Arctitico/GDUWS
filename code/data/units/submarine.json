@@ -1,0 +1,20 @@
+{
+  "id": "submarine",
+  "displayName": "潜艇",
+  "maxHp": 240,
+  "radius": 13,
+  "movementType": "UNDERWATER",
+  "moveSpeed": 0.8,
+  "sightRange": 100,
+  "role": "STRIKE",
+  "spritePath": "assets/units/light_sub/light_sub.png",
+  "attack": {
+    "canAttackLand": false,
+    "canAttackWaterSurface": true,
+    "canAttackAir": false,
+    "canAttackUnderwater": true,
+    "maxAttackRange": 120,
+    "directDamage": 50,
+    "shootDelay": 100
+  }
+}

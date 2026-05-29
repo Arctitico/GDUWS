@@ -1,0 +1,20 @@
+{
+  "id": "heavy_tank",
+  "displayName": "重型坦克",
+  "maxHp": 420,
+  "radius": 14,
+  "movementType": "LAND",
+  "moveSpeed": 0.85,
+  "sightRange": 120,
+  "role": "STRIKE",
+  "spritePath": "assets/units/mammoth_tank/mammoth_tank.png",
+  "attack": {
+    "canAttackLand": true,
+    "canAttackWaterSurface": true,
+    "canAttackAir": true,
+    "canAttackUnderwater": false,
+    "maxAttackRange": 150,
+    "directDamage": 35,
+    "shootDelay": 80
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "id": "battleship",
+  "displayName": "战列舰",
+  "maxHp": 520,
+  "radius": 18,
+  "movementType": "WATER",
+  "moveSpeed": 0.7,
+  "sightRange": 140,
+  "role": "STRIKE",
+  "spritePath": "assets/units/heavy_battleship/heavy_battleship.png",
+  "attack": {
+    "canAttackLand": false,
+    "canAttackWaterSurface": true,
+    "canAttackAir": false,
+    "canAttackUnderwater": false,
+    "maxAttackRange": 180,
+    "directDamage": 45,
+    "shootDelay": 110
+  }
+}

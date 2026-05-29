@@ -1,0 +1,20 @@
+{
+  "id": "interceptor",
+  "displayName": "拦截机",
+  "maxHp": 160,
+  "radius": 10,
+  "movementType": "AIR",
+  "moveSpeed": 2.0,
+  "sightRange": 130,
+  "role": "STRIKE",
+  "spritePath": "assets/units/interceptor/interceptor.png",
+  "attack": {
+    "canAttackLand": false,
+    "canAttackWaterSurface": false,
+    "canAttackAir": true,
+    "canAttackUnderwater": false,
+    "maxAttackRange": 110,
+    "directDamage": 20,
+    "shootDelay": 35
+  }
+}

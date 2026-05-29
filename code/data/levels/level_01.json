@@ -1,0 +1,16 @@
+{
+  "id": "level_01",
+  "name": "海陆遭遇战",
+  "map": "data/maps/level_01.map",
+  "playerBudget": {
+    "light_tank": 4,
+    "scout": 2,
+    "destroyer": 2
+  },
+  "enemyUnits": [
+    { "unitId": "heavy_tank", "col": 6,  "row": 18 },
+    { "unitId": "heavy_tank", "col": 10, "row": 16 },
+    { "unitId": "submarine",  "col": 22, "row": 10 },
+    { "unitId": "battleship", "col": 25, "row": 5 }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "id": "bomber",
+  "displayName": "攻击机",
+  "maxHp": 200,
+  "radius": 12,
+  "movementType": "AIR",
+  "moveSpeed": 1.6,
+  "sightRange": 120,
+  "role": "STRIKE",
+  "spritePath": "assets/units/bomber/bomber.png",
+  "attack": {
+    "canAttackLand": true,
+    "canAttackWaterSurface": true,
+    "canAttackAir": false,
+    "canAttackUnderwater": false,
+    "maxAttackRange": 100,
+    "directDamage": 40,
+    "shootDelay": 90
+  }
+}

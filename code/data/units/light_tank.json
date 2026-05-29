@@ -1,0 +1,20 @@
+{
+  "id": "light_tank",
+  "displayName": "轻型坦克",
+  "maxHp": 210,
+  "radius": 11,
+  "movementType": "LAND",
+  "moveSpeed": 1.1,
+  "sightRange": 120,
+  "role": "STRIKE",
+  "spritePath": "assets/units/tanks/tank.png",
+  "attack": {
+    "canAttackLand": true,
+    "canAttackWaterSurface": true,
+    "canAttackAir": false,
+    "canAttackUnderwater": false,
+    "maxAttackRange": 130,
+    "directDamage": 25,
+    "shootDelay": 75
+  }
+}
