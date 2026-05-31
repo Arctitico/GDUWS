@@ -1,0 +1,22 @@
+{
+  "id": "level_05",
+  "name": "立体攻防 (中图)",
+  "map": "data/maps/level_05.map",
+  "playerBudget": {
+    "light_tank": 4,
+    "heavy_tank": 2,
+    "destroyer": 2,
+    "battleship": 1,
+    "submarine": 1,
+    "interceptor": 1,
+    "bomber": 1
+  },
+  "enemyUnits": [
+    { "unitId": "heavy_tank", "col": 12, "row": 9,  "role": "STRIKE" },
+    { "unitId": "heavy_tank", "col": 13, "row": 16, "role": "STRIKE" },
+    { "unitId": "light_tank", "col": 11, "row": 5,  "role": "SCOUT" },
+    { "unitId": "battleship", "col": 25, "row": 5,  "role": "STRIKE" },
+    { "unitId": "destroyer",  "col": 22, "row": 17, "role": "SCOUT" },
+    { "unitId": "submarine",  "col": 20, "row": 10, "role": "STRIKE" }
+  ]
+}

@@ -1,0 +1,28 @@
+{
+  "id": "level_06",
+  "name": "全域大会战 (大图)",
+  "map": "data/maps/level_06.map",
+  "playerBudget": {
+    "light_tank": 6,
+    "heavy_tank": 3,
+    "destroyer": 3,
+    "battleship": 2,
+    "submarine": 2,
+    "interceptor": 2,
+    "bomber": 2
+  },
+  "enemyUnits": [
+    { "unitId": "heavy_tank", "col": 18, "row": 6,  "role": "STRIKE" },
+    { "unitId": "heavy_tank", "col": 19, "row": 16, "role": "STRIKE" },
+    { "unitId": "heavy_tank", "col": 17, "row": 26, "role": "STRIKE" },
+    { "unitId": "light_tank", "col": 20, "row": 10, "role": "SCOUT" },
+    { "unitId": "light_tank", "col": 16, "row": 22, "role": "SCOUT" },
+    { "unitId": "light_tank", "col": 18, "row": 28, "role": "STRIKE" },
+    { "unitId": "battleship", "col": 30, "row": 5,  "role": "STRIKE" },
+    { "unitId": "battleship", "col": 35, "row": 20, "role": "STRIKE" },
+    { "unitId": "destroyer",  "col": 28, "row": 11, "role": "SCOUT" },
+    { "unitId": "destroyer",  "col": 38, "row": 26, "role": "STRIKE" },
+    { "unitId": "submarine",  "col": 32, "row": 15, "role": "STRIKE" },
+    { "unitId": "submarine",  "col": 40, "row": 8,  "role": "STRIKE" }
+  ]
+}

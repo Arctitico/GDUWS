@@ -10,9 +10,15 @@ import java.awt.GraphicsEnvironment;
 import java.awt.Rectangle;
 import java.awt.event.KeyEvent;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import javax.swing.AbstractAction;
 import javax.swing.BorderFactory;
@@ -48,13 +54,17 @@ public class GameFrame extends JFrame {
 
     private final GameStateManager stateManager = new GameStateManager();
     private final UnitDefLoader unitDefs = new UnitDefLoader();
-    private final LevelDef level;
-    private final World world;
-    private final DeployController deploy;
     private final BattleSetup battleSetup;
-    private final GamePanel gamePanel;
-    private final GameLoop gameLoop;
+    private final List<LevelDef> levels = new ArrayList<>();
 
+    // 以下随选关切换而重建
+    private LevelDef level;
+    private World world;
+    private DeployController deploy;
+    private GamePanel gamePanel;
+    private GameLoop gameLoop;
+
+    private final JPanel centerWrap = new JPanel(new BorderLayout());
     private final Map<String, JToggleButton> unitButtons = new LinkedHashMap<>();
     private final JLabel statusLabel = new JLabel();
     private final JLabel counterLabel = new JLabel();
@@ -64,6 +74,7 @@ public class GameFrame extends JFrame {
     private static final String CARD_SELECT = "SELECT";
     private static final String CARD_DEPLOY = "DEPLOY";
     private static final String CARD_RESULT = "RESULT";
+    private final JPanel deployCard = new JPanel();
     private final JLabel resultTitle = new JLabel();
     private final JLabel resultStats = new JLabel();
 
@@ -73,25 +84,36 @@ public class GameFrame extends JFrame {
 
         try {
             unitDefs.loadDirectory(Paths.get("data", "units"));
-            level = new LevelLoader().loadFile(Paths.get("data", "levels", "level_01.json"));
-            GameMap map = new MapLoader().loadFile(Paths.get(level.mapPath));
-            world = new World(map);
+            loadAllLevels();
         } catch (IOException e) {
             throw new RuntimeException("加载关卡数据失败（请在 code/ 目录下运行）", e);
         }
-
-        this.deploy = new DeployController(world, unitDefs, level);
+        if (levels.isEmpty()) {
+            throw new RuntimeException("未找到任何关卡（data/levels/*.json）");
+        }
         this.battleSetup = new BattleSetup(unitDefs);
-        this.gamePanel = new GamePanel(world);
-        gamePanel.addMouseListener(new InputHandler(deploy, stateManager, this::refreshSidebar, gamePanel));
-        this.gameLoop = new GameLoop(world, stateManager, this::onTick);
-        gameLoop.setOnVictory(this::onVictory);
 
-        add(gamePanel, BorderLayout.CENTER);
+        centerWrap.setBackground(Color.BLACK);
+        add(centerWrap, BorderLayout.CENTER);
         add(buildSidebar(), BorderLayout.EAST);
 
-        refreshSidebar();
+        showCard(CARD_SELECT);
         applyDisplayConfig(config);
+    }
+
+    /** 扫描 data/levels 下全部 *.json 关卡，按文件名排序 */
+    private void loadAllLevels() throws IOException {
+        Path dir = Paths.get("data", "levels");
+        LevelLoader loader = new LevelLoader();
+        List<Path> files;
+        try (Stream<Path> s = Files.list(dir)) {
+            files = s.filter(p -> p.toString().endsWith(".json"))
+                     .sorted()
+                     .collect(Collectors.toList());
+        }
+        for (Path f : files) {
+            levels.add(loader.loadFile(f));
+        }
     }
 
     /** 按启动选择应用全屏或窗口显示模式 */
@@ -123,9 +145,10 @@ public class GameFrame extends JFrame {
 
     private JPanel buildSidebar() {
         sidebarCards.setBorder(BorderFactory.createEmptyBorder(10, 12, 10, 12));
-        sidebarCards.setPreferredSize(new Dimension(260, gamePanel.getPreferredSize().height));
+        sidebarCards.setPreferredSize(new Dimension(260, 600));
         sidebarCards.add(buildSelectPanel(), CARD_SELECT);
-        sidebarCards.add(buildDeployPanel(), CARD_DEPLOY);
+        deployCard.setLayout(new BoxLayout(deployCard, BoxLayout.Y_AXIS));
+        sidebarCards.add(deployCard, CARD_DEPLOY);
         sidebarCards.add(buildResultPanel(), CARD_RESULT);
         showCard(CARD_SELECT);
         return sidebarCards;
@@ -139,30 +162,61 @@ public class GameFrame extends JFrame {
         p.add(title);
         p.add(Box.createVerticalStrut(12));
 
-        JButton btn = new JButton(level.name);
-        btn.setAlignmentX(LEFT_ALIGNMENT);
-        btn.setMaximumSize(new Dimension(240, 40));
-        btn.addActionListener(e -> enterDeploy());
-        p.add(btn);
+        for (LevelDef def : levels) {
+            JButton btn = new JButton(def.name);
+            btn.setAlignmentX(LEFT_ALIGNMENT);
+            btn.setMaximumSize(new Dimension(240, 40));
+            btn.addActionListener(e -> selectLevel(def));
+            p.add(btn);
+            p.add(Box.createVerticalStrut(8));
+        }
 
-        p.add(Box.createVerticalStrut(20));
+        p.add(Box.createVerticalStrut(12));
         p.add(new JLabel("<html><i>选择关卡后进入布兵阶段</i></html>"));
         p.add(Box.createVerticalGlue());
         return p;
     }
 
-    private JPanel buildDeployPanel() {
-        JPanel p = new JPanel();
-        p.setLayout(new BoxLayout(p, BoxLayout.Y_AXIS));
+    /** 选定关卡：重建地图、世界、画布、布兵控制器与主循环 */
+    private void selectLevel(LevelDef def) {
+        if (gameLoop != null) {
+            gameLoop.stop();
+        }
+        this.level = def;
+        try {
+            GameMap map = new MapLoader().loadFile(Paths.get(def.mapPath));
+            this.world = new World(map);
+        } catch (IOException e) {
+            throw new RuntimeException("加载关卡地图失败：" + def.mapPath, e);
+        }
+        this.deploy = new DeployController(world, unitDefs, level);
+        this.gamePanel = new GamePanel(world);
+        gamePanel.addMouseListener(new InputHandler(deploy, stateManager, this::refreshSidebar, gamePanel));
+        this.gameLoop = new GameLoop(world, stateManager, this::onTick);
+        gameLoop.setOnVictory(this::onVictory);
+
+        centerWrap.removeAll();
+        centerWrap.add(gamePanel, BorderLayout.CENTER);
+        centerWrap.revalidate();
+        centerWrap.repaint();
+
+        rebuildDeployCard();
+        enterDeploy();
+    }
+
+    /** 依据当前关卡的可用兵力重建布兵侧栏 */
+    private void rebuildDeployCard() {
+        deployCard.removeAll();
+        unitButtons.clear();
 
         JLabel title = new JLabel(level.name);
         title.setFont(title.getFont().deriveFont(Font.BOLD, 15f));
-        p.add(title);
-        p.add(Box.createVerticalStrut(4));
-        p.add(new JLabel("左键放置 / 点击己方单位切换角色"));
-        p.add(new JLabel("右键移除"));
-        p.add(Box.createVerticalStrut(10));
-        p.add(new JLabel("可用单位："));
+        deployCard.add(title);
+        deployCard.add(Box.createVerticalStrut(4));
+        deployCard.add(new JLabel("左键放置 / 点击己方单位切换角色"));
+        deployCard.add(new JLabel("右键移除"));
+        deployCard.add(Box.createVerticalStrut(10));
+        deployCard.add(new JLabel("可用单位："));
 
         ButtonGroup group = new ButtonGroup();
         boolean first = true;
@@ -174,12 +228,12 @@ public class GameFrame extends JFrame {
             if (first) { btn.setSelected(true); first = false; }
             group.add(btn);
             unitButtons.put(unitId, btn);
-            p.add(Box.createVerticalStrut(4));
-            p.add(btn);
+            deployCard.add(Box.createVerticalStrut(4));
+            deployCard.add(btn);
         }
 
-        p.add(Box.createVerticalStrut(12));
-        p.add(new JLabel("放置角色："));
+        deployCard.add(Box.createVerticalStrut(12));
+        deployCard.add(new JLabel("放置角色："));
         JPanel roleWrap = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
         roleWrap.setAlignmentX(LEFT_ALIGNMENT);
         roleWrap.setMaximumSize(new Dimension(240, 34));
@@ -193,30 +247,38 @@ public class GameFrame extends JFrame {
         roleGroup.add(scoutBtn);
         roleWrap.add(strikeBtn);
         roleWrap.add(scoutBtn);
-        p.add(roleWrap);
+        deployCard.add(roleWrap);
 
-        p.add(Box.createVerticalStrut(16));
+        deployCard.add(Box.createVerticalStrut(16));
         startButton = new JButton("开始战斗");
         startButton.setAlignmentX(LEFT_ALIGNMENT);
         startButton.setMaximumSize(new Dimension(240, 36));
         startButton.addActionListener(e -> startBattle());
-        p.add(startButton);
+        deployCard.add(startButton);
 
-        p.add(Box.createVerticalStrut(10));
+        deployCard.add(Box.createVerticalStrut(10));
         counterLabel.setHorizontalAlignment(SwingConstants.LEFT);
         JPanel cWrap = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         cWrap.add(counterLabel);
-        p.add(cWrap);
+        deployCard.add(cWrap);
 
-        p.add(Box.createVerticalStrut(8));
+        deployCard.add(Box.createVerticalStrut(8));
         statusLabel.setHorizontalAlignment(SwingConstants.LEFT);
         statusLabel.setForeground(new Color(40, 40, 40));
         JPanel sWrap = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         sWrap.add(statusLabel);
-        p.add(sWrap);
+        deployCard.add(sWrap);
 
-        p.add(Box.createVerticalGlue());
-        return p;
+        deployCard.add(Box.createVerticalStrut(8));
+        JButton back = new JButton("返回选关");
+        back.setAlignmentX(LEFT_ALIGNMENT);
+        back.setMaximumSize(new Dimension(240, 32));
+        back.addActionListener(e -> backToSelect());
+        deployCard.add(back);
+
+        deployCard.add(Box.createVerticalGlue());
+        deployCard.revalidate();
+        deployCard.repaint();
     }
 
     private JPanel buildResultPanel() {
