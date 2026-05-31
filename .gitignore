@@ -1,11 +1,12 @@
 use-java13.ps1
 
-GDUWS/code/out/
+out
+dist
 *.class
 
-.idea/
+.idea
 *.iml
-.vscode/
+.vscode
 
 Thumbs.db
 .DS_Store
