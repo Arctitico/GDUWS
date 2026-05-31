@@ -3,6 +3,7 @@ package com.gduws;
 import javax.swing.SwingUtilities;
 
 import com.gduws.view.GameFrame;
+import com.gduws.view.StartupDialog;
 
 /**
  * GDUWS 程序入口（Ghost Domains: Unmanned Warfare Sim）。
@@ -16,7 +17,12 @@ public final class Main {
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
-            GameFrame frame = new GameFrame();
+            StartupDialog.Config config = StartupDialog.choose();
+            if (config == null) {
+                System.exit(0);
+                return;
+            }
+            GameFrame frame = new GameFrame(config);
             frame.setVisible(true);
         });
     }

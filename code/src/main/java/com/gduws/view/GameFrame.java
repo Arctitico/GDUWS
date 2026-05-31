@@ -6,20 +6,26 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
+import java.awt.GraphicsEnvironment;
+import java.awt.Rectangle;
+import java.awt.event.KeyEvent;
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import javax.swing.AbstractAction;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.ButtonGroup;
 import javax.swing.JButton;
+import javax.swing.JComponent;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JToggleButton;
+import javax.swing.KeyStroke;
 import javax.swing.SwingConstants;
 
 import com.gduws.control.BattleSetup;
@@ -61,7 +67,7 @@ public class GameFrame extends JFrame {
     private final JLabel resultTitle = new JLabel();
     private final JLabel resultStats = new JLabel();
 
-    public GameFrame() {
+    public GameFrame(StartupDialog.Config config) {
         setTitle("GDUWS — Ghost Domains: Unmanned Warfare Sim");
         setDefaultCloseOperation(EXIT_ON_CLOSE);
 
@@ -78,15 +84,41 @@ public class GameFrame extends JFrame {
         this.battleSetup = new BattleSetup(unitDefs);
         this.gamePanel = new GamePanel(world);
         gamePanel.addMouseListener(new InputHandler(deploy, stateManager, this::refreshSidebar, gamePanel));
-        this.gameLoop = new GameLoop(world, stateManager, gamePanel::repaint);
+        this.gameLoop = new GameLoop(world, stateManager, this::onTick);
         gameLoop.setOnVictory(this::onVictory);
 
         add(gamePanel, BorderLayout.CENTER);
         add(buildSidebar(), BorderLayout.EAST);
 
         refreshSidebar();
-        pack();
-        setLocationRelativeTo(null);
+        applyDisplayConfig(config);
+    }
+
+    /** 按启动选择应用全屏或窗口显示模式 */
+    private void applyDisplayConfig(StartupDialog.Config config) {
+        if (config.fullscreen) {
+            setUndecorated(true);
+            Rectangle screen = GraphicsEnvironment.getLocalGraphicsEnvironment()
+                .getDefaultScreenDevice().getDefaultConfiguration().getBounds();
+            setBounds(screen);
+            installExitOnEscape();
+        } else {
+            setSize(config.width, config.height);
+            setLocationRelativeTo(null);
+        }
+    }
+
+    /** 全屏无边框时按 ESC 退出，避免玩家被困 */
+    private void installExitOnEscape() {
+        JComponent root = getRootPane();
+        root.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
+            .put(KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0), "exitGame");
+        root.getActionMap().put("exitGame", new AbstractAction() {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent e) {
+                System.exit(0);
+            }
+        });
     }
 
     private JPanel buildSidebar() {
@@ -277,6 +309,17 @@ public class GameFrame extends JFrame {
         gamePanel.renderer().selectedUnit = null;
         gameLoop.start();
         refreshSidebar();
+    }
+
+    /** 每 tick 回调：重绘战场并刷新侧栏，避免侧栏长期不重绘被外部浮窗遮盖 */
+    private void onTick() {
+        gamePanel.repaint();
+        if (stateManager.is(GameState.BATTLE)) {
+            int pAlive = world.countAlive(Faction.PLAYER);
+            int eAlive = world.countAlive(Faction.ENEMY);
+            counterLabel.setText("<html>剩余兵力：<br>己方 <b>" + pAlive + "</b> · 敌方 <b>" + eAlive + "</b></html>");
+        }
+        sidebarCards.repaint();
     }
 
     private void onVictory(Faction winner) {

@@ -35,36 +35,52 @@ public class InputHandler extends MouseAdapter {
 
     @Override
     public void mousePressed(MouseEvent e) {
+        // 左键即时处理；右键延后到释放时判断，避免与拖动平移冲突
+        if (e.getButton() == MouseEvent.BUTTON1) {
+            if (stateManager.is(GameState.DEPLOY)) {
+                handleDeployLeft(e);
+            } else if (stateManager.is(GameState.BATTLE)) {
+                handleBattleLeft(e);
+            }
+            onChange.run();
+        }
+    }
+
+    @Override
+    public void mouseReleased(MouseEvent e) {
+        if (e.getButton() != MouseEvent.BUTTON3) {
+            return;
+        }
+        // 若本次右键是拖动地图则不触发移除/取消
+        if (panel.rightDragMoved()) {
+            return;
+        }
+        int wx = (int) panel.worldX(e.getX());
+        int wy = (int) panel.worldY(e.getY());
         if (stateManager.is(GameState.DEPLOY)) {
-            handleDeploy(e);
+            deploy.tryRemove(wx, wy);
         } else if (stateManager.is(GameState.BATTLE)) {
-            handleBattle(e);
+            panel.renderer().selectedUnit = null;
         }
         onChange.run();
     }
 
-    private void handleDeploy(MouseEvent e) {
-        if (e.getButton() == MouseEvent.BUTTON1) {
-            // 左键点在己方单位上则切换其角色，否则尝试放置
-            if (!deploy.toggleRoleAt(e.getX(), e.getY())) {
-                deploy.tryPlace(e.getX(), e.getY());
-            }
-        } else if (e.getButton() == MouseEvent.BUTTON3) {
-            deploy.tryRemove(e.getX(), e.getY());
+    private void handleDeployLeft(MouseEvent e) {
+        int wx = (int) panel.worldX(e.getX());
+        int wy = (int) panel.worldY(e.getY());
+        // 左键点在己方单位上则切换其角色，否则尝试放置
+        if (!deploy.toggleRoleAt(wx, wy)) {
+            deploy.tryPlace(wx, wy);
         }
     }
 
-    private void handleBattle(MouseEvent e) {
-        // 战斗中单位完全自主，左键仅用于选中查看，右键取消
+    private void handleBattleLeft(MouseEvent e) {
+        // 战斗中单位完全自主，左键仅用于选中查看
         GameRenderer r = panel.renderer();
         World w = panel.world();
-        if (e.getButton() == MouseEvent.BUTTON3) {
-            r.selectedUnit = null;
-            return;
-        }
-        if (e.getButton() != MouseEvent.BUTTON1) return;
-
-        Unit hit = w.unitAt(e.getX(), e.getY(), 0);
+        double wx = panel.worldX(e.getX());
+        double wy = panel.worldY(e.getY());
+        Unit hit = w.unitAt(wx, wy, 0);
         r.selectedUnit = (hit != null && hit.faction == Faction.PLAYER) ? hit : null;
     }
 }
