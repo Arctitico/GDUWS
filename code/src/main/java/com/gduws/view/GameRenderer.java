@@ -107,6 +107,11 @@ public class GameRenderer {
             int fy = (int) (u.y + Math.sin(u.facing) * r);
             g.drawLine((int) u.x, (int) u.y, fx, fy);
         }
+
+        // 炮塔覆盖在底座之上，按各自的朝向绘制（底座随移动转向、炮塔随攻击目标转向）
+        if (u.def.turretSpritePath != null) {
+            sprites.draw(g, u.def.turretSpritePath, u.x, u.y, u.turretFacing);
+        }
     }
 
     private void drawVisionCircles(Graphics2D g, World world) {
@@ -165,8 +170,9 @@ public class GameRenderer {
         g.fillRect(x - 1, y - 1, barW + 2, barH + 2);
         g.setColor(new Color(60, 60, 60));
         g.fillRect(x, y, barW, barH);
-        Color hpColor = ratio > 0.5 ? new Color(80, 200, 80)
-                       : ratio > 0.25 ? new Color(230, 200, 60)
+        // 血条颜色以阵营区分：己方绿色，敌方红色
+        Color hpColor = (u.faction == Faction.PLAYER)
+                       ? new Color(80, 200, 80)
                        : new Color(220, 60, 60);
         g.setColor(hpColor);
         g.fillRect(x, y, (int) (barW * ratio), barH);

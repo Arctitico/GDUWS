@@ -7,6 +7,7 @@
   "moveSpeed": 0.9,
   "sightRange": 130,
   "spritePath": "assets/units/heavy_aa_ship/heavy_aa_ship.png",
+  "turretSpritePath": "assets/units/heavy_aa_ship/anti_air_top_flakgun.png",
   "attack": {
     "canAttackLand": false,
     "canAttackWaterSurface": true,

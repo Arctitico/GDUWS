@@ -51,6 +51,7 @@ public class UnitDefLoader {
         def.moveSpeed = dbl(root, "moveSpeed", 1.0);
         def.sightRange = intVal(root, "sightRange");
         def.spritePath = root.containsKey("spritePath") ? (String) root.get("spritePath") : null;
+        def.turretSpritePath = root.containsKey("turretSpritePath") ? (String) root.get("turretSpritePath") : null;
 
         Map<String, Object> a = (Map<String, Object>) root.get("attack");
         AttackProfile attack = new AttackProfile();

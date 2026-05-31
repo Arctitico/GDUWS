@@ -110,6 +110,9 @@ public class World {
         for (Faction f : Faction.values()) {
             initialCount.put(f, countAlive(f));
         }
+        for (Unit u : units) {
+            u.lastActiveTick = tick;
+        }
         winner = null;
         battleStarted = true;
     }

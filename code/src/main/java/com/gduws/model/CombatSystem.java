@@ -30,10 +30,17 @@ public final class CombatSystem {
             }
             u.currentTarget = target;
 
-            // 面向目标（瞬时转向，确保能开火）
+            // 瞄准目标：有炮塔的单位仅转动炮塔，底座朝向保持不变
+            // 无炮塔的单位（如飞机、潜艇）整体转向目标
             double dx = target.x - u.x;
             double dy = target.y - u.y;
-            u.facing = Math.atan2(dy, dx);
+            double aim = Math.atan2(dy, dx);
+            if (u.def.turretSpritePath != null) {
+                u.turretFacing = aim;
+            } else {
+                u.facing = aim;
+                u.turretFacing = aim;
+            }
 
             if (u.shootCooldown == 0) {
                 target.hp -= ap.directDamage;

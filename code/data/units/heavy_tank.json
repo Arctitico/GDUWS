@@ -7,6 +7,7 @@
   "moveSpeed": 0.85,
   "sightRange": 120,
   "spritePath": "assets/units/mammoth_tank/mammoth_tank.png",
+  "turretSpritePath": "assets/units/mammoth_tank/mammoth_tank_turret.png",
   "attack": {
     "canAttackLand": true,
     "canAttackWaterSurface": true,

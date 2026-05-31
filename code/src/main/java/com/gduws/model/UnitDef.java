@@ -13,5 +13,6 @@ public class UnitDef {
     public double       moveSpeed;    // 每 tick 位移
     public int          sightRange;   // 视野半径（侦察核心）
     public AttackProfile attack;
-    public String       spritePath;   // 复用 RustedWarfare 的 PNG（可为空）
+    public String       spritePath;       // 复用 RustedWarfare 的底座 PNG（可为空）
+    public String       turretSpritePath; // 炮塔 PNG，可为空；为空表示该单位无独立炮塔
 }
