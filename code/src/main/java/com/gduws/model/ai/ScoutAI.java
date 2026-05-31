@@ -56,7 +56,7 @@ public final class ScoutAI {
 
         int sc = w.map.toCol(u.x);
         int sr = w.map.toRow(u.y);
-        Point regionCell = w.pickScoutGoal(u.faction, sc, sr, u.def.movementType);
+        Point regionCell = w.exploration().pickGoal(u.faction, sc, sr, u.def.movementType);
         if (regionCell == null) return;
 
         // 避战寻路：威胁场让路径绕开已知敌人

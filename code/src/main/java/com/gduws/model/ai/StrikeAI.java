@@ -236,7 +236,7 @@ public final class StrikeAI {
         int gr = clamp(w.map.toRow(gy), 0, w.map.rows - 1);
 
         // 寻找最近可通行的撤退落点
-        Point goal = w.findNearestPassable(gc, gr, u.def.movementType, 6);
+        Point goal = w.map.findNearestPassable(gc, gr, u.def.movementType, 6);
         if (goal == null) return;
 
         int sc = w.map.toCol(u.x);

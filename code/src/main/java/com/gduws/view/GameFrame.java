@@ -22,6 +22,8 @@ import javax.swing.JPanel;
 import javax.swing.JToggleButton;
 import javax.swing.SwingConstants;
 
+import com.gduws.control.BattleSetup;
+import com.gduws.control.DeployController;
 import com.gduws.control.GameLoop;
 import com.gduws.control.GameState;
 import com.gduws.control.GameStateManager;
@@ -31,7 +33,6 @@ import com.gduws.data.UnitDefLoader;
 import com.gduws.model.Faction;
 import com.gduws.model.GameMap;
 import com.gduws.model.LevelDef;
-import com.gduws.model.Unit;
 import com.gduws.model.UnitDef;
 import com.gduws.model.UnitRole;
 import com.gduws.model.World;
@@ -44,6 +45,7 @@ public class GameFrame extends JFrame {
     private final LevelDef level;
     private final World world;
     private final DeployController deploy;
+    private final BattleSetup battleSetup;
     private final GamePanel gamePanel;
     private final GameLoop gameLoop;
 
@@ -73,6 +75,7 @@ public class GameFrame extends JFrame {
         }
 
         this.deploy = new DeployController(world, unitDefs, level);
+        this.battleSetup = new BattleSetup(unitDefs);
         this.gamePanel = new GamePanel(world);
         gamePanel.addMouseListener(new InputHandler(deploy, stateManager, this::refreshSidebar, gamePanel));
         this.gameLoop = new GameLoop(world, stateManager, gamePanel::repaint);
@@ -84,17 +87,6 @@ public class GameFrame extends JFrame {
         refreshSidebar();
         pack();
         setLocationRelativeTo(null);
-    }
-
-    private void placeEnemyUnits() {
-        for (LevelDef.PlacedUnit p : level.enemyUnits) {
-            UnitDef def = unitDefs.get(p.unitId);
-            double cx = world.map.cellCenterX(p.col);
-            double cy = world.map.cellCenterY(p.row);
-            Unit u = new Unit(def, Faction.ENEMY, cx, cy);
-            u.role = p.role;
-            world.addUnit(u);
-        }
     }
 
     private JPanel buildSidebar() {
@@ -234,7 +226,7 @@ public class GameFrame extends JFrame {
 
     private void enterDeploy() {
         world.reset();
-        placeEnemyUnits();
+        battleSetup.placeEnemies(world, level);
         deploy.reset(level);
         stateManager.setState(GameState.DEPLOY);
         if (startButton != null) startButton.setEnabled(true);

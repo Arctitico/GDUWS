@@ -1,4 +1,4 @@
-package com.gduws.view;
+package com.gduws.control;
 
 import java.util.LinkedHashMap;
 import java.util.Map;

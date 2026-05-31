@@ -1,5 +1,7 @@
 package com.gduws.model;
 
+import java.awt.Point;
+
 /** 网格地图：持有地形、提供可通行性判断与像素/格坐标换算。 */
 public class GameMap {
 
@@ -53,4 +55,21 @@ public class GameMap {
     public int pixelWidth()  { return cols * tileSize; }
 
     public int pixelHeight() { return rows * tileSize; }
+
+    /** 在 (cx,cy) 周围由近及远扩展，找最近的可通行格；找不到返回 null */
+    public Point findNearestPassable(int cx, int cy, MovementType mt, int radius) {
+        for (int r = 0; r <= radius; r++) {
+            for (int dy = -r; dy <= r; dy++) {
+                for (int dx = -r; dx <= r; dx++) {
+                    if (Math.max(Math.abs(dx), Math.abs(dy)) != r) continue;
+                    int nx = cx + dx;
+                    int ny = cy + dy;
+                    if (isPassable(nx, ny, mt)) {
+                        return new Point(nx, ny);
+                    }
+                }
+            }
+        }
+        return null;
+    }
 }

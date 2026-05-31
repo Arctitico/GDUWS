@@ -1,6 +1,5 @@
 package com.gduws.model;
 
-import java.awt.Point;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumMap;
@@ -22,12 +21,8 @@ public class World {
     private final AISystem aiSystem = new AISystem();
     private final CombatSystem combatSystem = new CombatSystem();
     private final Pathfinder pathfinder;
+    private final ExplorationMap exploration;
     private int tick = 0;
-
-    // 探索区域跟踪：每阵营一张二维"最后访问 tick"表（粗粒度）
-    public static final int REGION_SIZE = 4;
-    public final int regionCols, regionRows;
-    private final Map<Faction, int[][]> regionVisit = new EnumMap<>(Faction.class);
 
     // 胜负判定
     private final Map<Faction, Integer> initialCount = new EnumMap<>(Faction.class);
@@ -37,11 +32,9 @@ public class World {
     public World(GameMap map) {
         this.map = map;
         this.pathfinder = new Pathfinder(map);
-        this.regionCols = (map.cols + REGION_SIZE - 1) / REGION_SIZE;
-        this.regionRows = (map.rows + REGION_SIZE - 1) / REGION_SIZE;
+        this.exploration = new ExplorationMap(map);
         for (Faction f : Faction.values()) {
             intel.put(f, new IntelBoard());
-            regionVisit.put(f, new int[regionRows][regionCols]);
         }
     }
 
@@ -87,6 +80,10 @@ public class World {
         return pathfinder;
     }
 
+    public ExplorationMap exploration() {
+        return exploration;
+    }
+
     public CombatSystem combatSystem() {
         return combatSystem;
     }
@@ -122,11 +119,8 @@ public class World {
         units.clear();
         for (Faction f : Faction.values()) {
             intel.get(f).clearAll();
-            int[][] v = regionVisit.get(f);
-            for (int r = 0; r < v.length; r++) {
-                for (int c = 0; c < v[r].length; c++) v[r][c] = 0;
-            }
         }
+        exploration.clear();
         combatSystem.recentShots.clear();
         initialCount.clear();
         winner = null;
@@ -192,65 +186,8 @@ public class World {
     private void markFriendlyRegions() {
         for (Unit u : units) {
             if (u.isDead()) continue;
-            int rc = map.toCol(u.x) / REGION_SIZE;
-            int rr = map.toRow(u.y) / REGION_SIZE;
-            if (rc >= 0 && rr >= 0 && rc < regionCols && rr < regionRows) {
-                regionVisit.get(u.faction)[rr][rc] = tick;
-            }
+            exploration.markVisited(u.faction, u.x, u.y, tick);
         }
-    }
-
-    /** 为侦察单位挑选下一个探索目标格（区域中心附近的一格可通行格） */
-    public Point pickScoutGoal(Faction faction, int fromCx, int fromCy, MovementType mt) {
-        int[][] visit = regionVisit.get(faction);
-        int fromRc = fromCx / REGION_SIZE;
-        int fromRr = fromCy / REGION_SIZE;
-
-        int bestRc = -1, bestRr = -1;
-        int oldestTick = Integer.MAX_VALUE;
-        double bestScore = -1;
-
-        for (int rr = 0; rr < regionRows; rr++) {
-            for (int rc = 0; rc < regionCols; rc++) {
-                if (rc == fromRc && rr == fromRr) continue;
-                int t = visit[rr][rc];
-                int drc = rc - fromRc;
-                int drr = rr - fromRr;
-                double dist = Math.sqrt(drc * drc + drr * drr);
-                // 主排序：最旧；同 tick 时倾向较远区域以分散探索
-                if (t < oldestTick || (t == oldestTick && dist > bestScore)) {
-                    oldestTick = t;
-                    bestScore = dist;
-                    bestRc = rc;
-                    bestRr = rr;
-                }
-            }
-        }
-        if (bestRc < 0) return null;
-
-        // 在所选区域内寻找一格可通行格
-        int baseC = bestRc * REGION_SIZE;
-        int baseR = bestRr * REGION_SIZE;
-        int cc = Math.min(baseC + REGION_SIZE / 2, map.cols - 1);
-        int cr = Math.min(baseR + REGION_SIZE / 2, map.rows - 1);
-        return findNearestPassable(cc, cr, mt, REGION_SIZE);
-    }
-
-    /** 在 (cx,cy) 周围扩展搜索最近的可通行格；找不到返回 null */
-    public Point findNearestPassable(int cx, int cy, MovementType mt, int radius) {
-        for (int r = 0; r <= radius; r++) {
-            for (int dy = -r; dy <= r; dy++) {
-                for (int dx = -r; dx <= r; dx++) {
-                    if (Math.max(Math.abs(dx), Math.abs(dy)) != r) continue;
-                    int nx = cx + dx;
-                    int ny = cy + dy;
-                    if (map.isPassable(nx, ny, mt)) {
-                        return new Point(nx, ny);
-                    }
-                }
-            }
-        }
-        return null;
     }
 
     /** 半径 r 像素内的单位列表 */
