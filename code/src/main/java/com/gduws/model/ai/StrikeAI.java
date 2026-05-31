@@ -23,6 +23,8 @@ public final class StrikeAI {
     private static final int REPLAN_INTERVAL = 20;
     /** 友邻间距小于该像素视为挤在一起，需要错开 */
     private static final double MIN_SEPARATION = 16;
+    /** 目标距离超过最大射程该比例时主动追击，把目标拉回有效射程内 */
+    private static final double PURSUE_RATIO = 0.9;
 
     public void update(Unit u, World w) {
         IntelBoard intel = w.intelOf(u.faction);
@@ -64,7 +66,12 @@ public final class StrikeAI {
         double dy = target.y - u.y;
         double dist = Math.sqrt(dx * dx + dy * dy);
 
-        if (dist <= u.def.attack.maxAttackRange) {
+        double maxRange = u.def.attack.maxAttackRange;
+        // 追击阈值：目标超过最大射程的 90% 时即视为快要溜出射程，
+        // 主动靠近把它拉回有效射程内
+        double pursueRange = maxRange * PURSUE_RATIO;
+
+        if (dist <= pursueRange) {
             // 正在错位移动则继续走完，避免抖动
             if (u.path != null && !u.path.isEmpty()) {
                 u.state = UnitState.MOVING_TO_TARGET;
@@ -72,7 +79,7 @@ public final class StrikeAI {
             }
             // 在射程内但与友邻挤在一起：错开到附近空位，否则原地开火
             if (isCrowded(u, w)) {
-                Point spot = findApproachTile(u, w, target);
+                Point spot = findApproachTile(u, w, target, maxRange);
                 if (spot != null
                         && !(w.map.toCol(u.x) == spot.x && w.map.toRow(u.y) == spot.y)) {
                     int sc = w.map.toCol(u.x);
@@ -86,11 +93,12 @@ public final class StrikeAI {
                     }
                 }
             }
-            // 在射程内：停下，由 CombatSystem 开火
+            // 距离足够近：停下，由 CombatSystem 开火
             u.state = UnitState.ATTACKING;
             u.path = null;
             u.moveGoal = null;
         } else {
+            // 目标接近射程边缘(>90%)或已超出：追击靠近，把目标拉回有效射程内
             u.state = UnitState.MOVING_TO_TARGET;
             boolean needPath = u.path == null || u.path.isEmpty()
                 || (w.tickCount() % REPLAN_INTERVAL == 0);
@@ -99,9 +107,9 @@ public final class StrikeAI {
                 int sr = w.map.toRow(u.y);
                 int gc = w.map.toCol(target.x);
                 int gr = w.map.toRow(target.y);
-                // 走向目标射程内一处未被友邻占用的落点，避免多单位挤向同一格；
+                // 走向目标 90% 射程内一处未被友邻占用的落点，避免多单位挤向同一格；
                 // 找不到则退回目标格附近
-                Point approach = findApproachTile(u, w, target);
+                Point approach = findApproachTile(u, w, target, pursueRange);
                 if (approach != null) {
                     gc = approach.x;
                     gr = approach.y;
@@ -118,10 +126,9 @@ public final class StrikeAI {
      * 为本单位寻找一个可通行的接近落点：在目标周围由近及远搜索，
      * 返回首个本单位移动域可通行、且落点中心位于本单位射程内的格
      */
-    private Point findApproachTile(Unit u, World w, Unit target) {
+    private Point findApproachTile(Unit u, World w, Unit target, double range) {
         int tc = w.map.toCol(target.x);
         int tr = w.map.toRow(target.y);
-        double range = u.def.attack.maxAttackRange;
         // 以射程换算的格数为半径上限，外加余量
         int maxR = (int) Math.ceil(range / w.map.tileSize) + 2;
         Point best = null;
