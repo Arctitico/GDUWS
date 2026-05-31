@@ -6,7 +6,6 @@
   "movementType": "AIR",
   "moveSpeed": 1.6,
   "sightRange": 120,
-  "role": "STRIKE",
   "spritePath": "assets/units/bomber/bomber.png",
   "attack": {
     "canAttackLand": true,

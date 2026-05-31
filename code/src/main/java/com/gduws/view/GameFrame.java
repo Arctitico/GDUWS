@@ -33,6 +33,7 @@ import com.gduws.model.GameMap;
 import com.gduws.model.LevelDef;
 import com.gduws.model.Unit;
 import com.gduws.model.UnitDef;
+import com.gduws.model.UnitRole;
 import com.gduws.model.World;
 
 /** 主窗口：串联 选关 → 布兵 → 战斗 → 结算 全流程 */
@@ -90,7 +91,9 @@ public class GameFrame extends JFrame {
             UnitDef def = unitDefs.get(p.unitId);
             double cx = world.map.cellCenterX(p.col);
             double cy = world.map.cellCenterY(p.row);
-            world.addUnit(new Unit(def, Faction.ENEMY, cx, cy));
+            Unit u = new Unit(def, Faction.ENEMY, cx, cy);
+            u.role = p.role;
+            world.addUnit(u);
         }
     }
 
@@ -132,7 +135,8 @@ public class GameFrame extends JFrame {
         title.setFont(title.getFont().deriveFont(Font.BOLD, 15f));
         p.add(title);
         p.add(Box.createVerticalStrut(4));
-        p.add(new JLabel("左键放置 · 右键移除"));
+        p.add(new JLabel("左键放置 / 点击己方单位切换角色"));
+        p.add(new JLabel("右键移除"));
         p.add(Box.createVerticalStrut(10));
         p.add(new JLabel("可用单位："));
 
@@ -149,6 +153,23 @@ public class GameFrame extends JFrame {
             p.add(Box.createVerticalStrut(4));
             p.add(btn);
         }
+
+        p.add(Box.createVerticalStrut(12));
+        p.add(new JLabel("放置角色："));
+        JPanel roleWrap = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
+        roleWrap.setAlignmentX(LEFT_ALIGNMENT);
+        roleWrap.setMaximumSize(new Dimension(240, 34));
+        ButtonGroup roleGroup = new ButtonGroup();
+        JToggleButton strikeBtn = new JToggleButton("打击");
+        JToggleButton scoutBtn = new JToggleButton("侦察");
+        strikeBtn.setSelected(true);
+        strikeBtn.addActionListener(e -> { deploy.setDeployRole(UnitRole.STRIKE); refreshSidebar(); });
+        scoutBtn.addActionListener(e -> { deploy.setDeployRole(UnitRole.SCOUT); refreshSidebar(); });
+        roleGroup.add(strikeBtn);
+        roleGroup.add(scoutBtn);
+        roleWrap.add(strikeBtn);
+        roleWrap.add(scoutBtn);
+        p.add(roleWrap);
 
         p.add(Box.createVerticalStrut(16));
         startButton = new JButton("开始战斗");

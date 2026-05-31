@@ -20,17 +20,21 @@ public class Unit {
     public Deque<Point> path;      // 当前路径
     public Point  moveGoal;        // 移动终点（格）
 
+    /** 任务角色（侦察 / 打击），可由玩家在布兵阶段为每个单位指派 */
+    public UnitRole role;
+
     public Unit(UnitDef def, Faction faction, double x, double y) {
         this.def = def;
         this.faction = faction;
         this.x = x;
         this.y = y;
         this.hp = def.maxHp;
+        this.role = UnitRole.STRIKE;
     }
 
     public boolean isDead()  { return hp <= 0; }
 
-    public boolean isScout() { return def.role == UnitRole.SCOUT; }
+    public boolean isScout() { return role == UnitRole.SCOUT; }
 
     /** 由移动域推导所处高度层。 */
     public UnitLayer layer() {

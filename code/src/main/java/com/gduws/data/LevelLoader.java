@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.gduws.model.LevelDef;
+import com.gduws.model.UnitRole;
 
 /** 从 JSON 加载 {@link LevelDef}。 */
 public class LevelLoader {
@@ -36,7 +37,10 @@ public class LevelLoader {
                 String unitId = (String) e.get("unitId");
                 int col = (int) Math.round(((Number) e.get("col")).doubleValue());
                 int row = (int) Math.round(((Number) e.get("row")).doubleValue());
-                level.enemyUnits.add(new LevelDef.PlacedUnit(unitId, col, row));
+                UnitRole role = e.containsKey("role")
+                    ? UnitRole.valueOf(((String) e.get("role")).toUpperCase())
+                    : UnitRole.STRIKE;
+                level.enemyUnits.add(new LevelDef.PlacedUnit(unitId, col, row, role));
             }
         }
         return level;

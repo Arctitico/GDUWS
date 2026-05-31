@@ -8,6 +8,7 @@ import com.gduws.model.Faction;
 import com.gduws.model.LevelDef;
 import com.gduws.model.Unit;
 import com.gduws.model.UnitDef;
+import com.gduws.model.UnitRole;
 import com.gduws.model.World;
 
 /** 布兵阶段逻辑：管理可用兵力预算、选中单位类型、放置/移除校验。 */
@@ -18,6 +19,8 @@ public class DeployController {
     private final Map<String, Integer> remaining = new LinkedHashMap<>();
     private String selectedUnitId;
     private String lastMessage = "";
+    /** 新放置单位的任务角色（侦察 / 打击） */
+    private UnitRole deployRole = UnitRole.STRIKE;
 
     public DeployController(World world, UnitDefLoader unitDefs, LevelDef level) {
         this.world = world;
@@ -52,6 +55,30 @@ public class DeployController {
         return lastMessage;
     }
 
+    public UnitRole deployRole() {
+        return deployRole;
+    }
+
+    public void setDeployRole(UnitRole role) {
+        this.deployRole = role;
+        lastMessage = "新单位将作为：" + roleName(role);
+    }
+
+    /** 切换指定像素位置处己方单位的任务角色，成功返回 true */
+    public boolean toggleRoleAt(double px, double py) {
+        Unit u = world.unitAt(px, py, 0);
+        if (u == null || u.faction != Faction.PLAYER) {
+            return false;
+        }
+        u.role = (u.role == UnitRole.SCOUT) ? UnitRole.STRIKE : UnitRole.SCOUT;
+        lastMessage = u.def.displayName + " 改为：" + roleName(u.role);
+        return true;
+    }
+
+    private static String roleName(UnitRole role) {
+        return role == UnitRole.SCOUT ? "侦察" : "打击";
+    }
+
     /** 在像素坐标尝试放置当前选中的己方单位。成功返回 true。 */
     public boolean tryPlace(double px, double py) {
         if (selectedUnitId == null) {
@@ -75,9 +102,11 @@ public class DeployController {
         }
         double cx = world.map.cellCenterX(col);
         double cy = world.map.cellCenterY(row);
-        world.addUnit(new Unit(def, Faction.PLAYER, cx, cy));
+        Unit u = new Unit(def, Faction.PLAYER, cx, cy);
+        u.role = deployRole;
+        world.addUnit(u);
         remaining.put(selectedUnitId, remaining.get(selectedUnitId) - 1);
-        lastMessage = "已放置 " + def.displayName;
+        lastMessage = "已放置 " + def.displayName + "（" + roleName(deployRole) + "）";
         return true;
     }
 

@@ -13,11 +13,13 @@ public class LevelDef {
         public final String unitId;
         public final int col;
         public final int row;
+        public final UnitRole role;
 
-        public PlacedUnit(String unitId, int col, int row) {
+        public PlacedUnit(String unitId, int col, int row, UnitRole role) {
             this.unitId = unitId;
             this.col = col;
             this.row = row;
+            this.role = role;
         }
     }
 

@@ -2,7 +2,6 @@ package com.gduws.view;
 
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.util.Deque;
 
 import com.gduws.control.GameState;
 import com.gduws.control.GameStateManager;
@@ -13,9 +12,9 @@ import com.gduws.model.World;
 /**
  * 鼠标交互：
  * <ul>
- *   <li>DEPLOY：左键放置 / 右键移除（沿用 M1）。</li>
- *   <li>BATTLE：左键在己方单位上选中；选中后再次左键 = 指派移动目标。
- *       右键取消选择。供 Step 4/5 演示移动 + 视野/情报。</li>
+ *   <li>DEPLOY：左键在空地放置，在己方单位上点击则切换其侦察/打击角色；右键移除。</li>
+ *   <li>BATTLE：左键选中己方单位仅用于查看信息；右键取消选择。
+ *       战斗中所有单位完全自主行动，玩家无法操控。</li>
  * </ul>
  */
 public class InputHandler extends MouseAdapter {
@@ -45,13 +44,17 @@ public class InputHandler extends MouseAdapter {
 
     private void handleDeploy(MouseEvent e) {
         if (e.getButton() == MouseEvent.BUTTON1) {
-            deploy.tryPlace(e.getX(), e.getY());
+            // 左键点在己方单位上则切换其角色，否则尝试放置
+            if (!deploy.toggleRoleAt(e.getX(), e.getY())) {
+                deploy.tryPlace(e.getX(), e.getY());
+            }
         } else if (e.getButton() == MouseEvent.BUTTON3) {
             deploy.tryRemove(e.getX(), e.getY());
         }
     }
 
     private void handleBattle(MouseEvent e) {
+        // 战斗中单位完全自主，左键仅用于选中查看，右键取消
         GameRenderer r = panel.renderer();
         World w = panel.world();
         if (e.getButton() == MouseEvent.BUTTON3) {
@@ -61,18 +64,6 @@ public class InputHandler extends MouseAdapter {
         if (e.getButton() != MouseEvent.BUTTON1) return;
 
         Unit hit = w.unitAt(e.getX(), e.getY(), 0);
-        if (hit != null && hit.faction == Faction.PLAYER) {
-            r.selectedUnit = hit;
-            return;
-        }
-        Unit sel = r.selectedUnit;
-        if (sel != null && !sel.isDead()) {
-            Deque<java.awt.Point> path = w.pathfinder().findPath(
-                sel, e.getX(), e.getY(), /*avoidEnemies=*/false, null);
-            if (path != null) {
-                sel.path = path;
-                sel.moveGoal = path.isEmpty() ? null : path.peekLast();
-            }
-        }
+        r.selectedUnit = (hit != null && hit.faction == Faction.PLAYER) ? hit : null;
     }
 }

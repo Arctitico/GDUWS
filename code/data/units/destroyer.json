@@ -6,7 +6,6 @@
   "movementType": "WATER",
   "moveSpeed": 0.9,
   "sightRange": 130,
-  "role": "STRIKE",
   "spritePath": "assets/units/heavy_aa_ship/heavy_aa_ship.png",
   "attack": {
     "canAttackLand": false,

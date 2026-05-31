@@ -26,7 +26,6 @@ public class GameRenderer {
 
     private static final Color PLAYER_COLOR = new Color(70, 130, 220);
     private static final Color ENEMY_COLOR  = new Color(210, 70, 70);
-    private static final Color SELECT_COLOR = new Color(255, 220, 60);
 
     private static final Color PATH_COLOR   = new Color(255, 255, 255, 160);
     private static final Color SIGHT_COLOR  = new Color(255, 255, 255, 35);
@@ -36,6 +35,8 @@ public class GameRenderer {
     public boolean showOverlay = true;
     /** 当前选中的单位（用于高亮）。 */
     public Unit selectedUnit;
+
+    private final SpriteCache sprites = new SpriteCache();
 
     public void render(Graphics2D g, World world) {
         g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
@@ -93,28 +94,19 @@ public class GameRenderer {
             g.fillOval(x + 4, y + 6, d, d);
         }
 
-        g.setColor(base);
-        g.fillOval(x, y, d, d);
-        g.setColor(base.darker());
-        g.setStroke(new BasicStroke(2f));
-        g.drawOval(x, y, d, d);
-
-        // 朝向指示线
-        int fx = (int) (u.x + Math.cos(u.facing) * r);
-        int fy = (int) (u.y + Math.sin(u.facing) * r);
-        g.drawLine((int) u.x, (int) u.y, fx, fy);
-
-        // 选中高亮
-        if (u == selectedUnit) {
-            g.setColor(SELECT_COLOR);
+        // 仅以 PNG 原始尺寸绘制单位图像；失败时回退为色块圆
+        boolean drawn = sprites.draw(g, u.def.spritePath, u.x, u.y, u.facing);
+        if (!drawn) {
+            g.setColor(base);
+            g.fillOval(x, y, d, d);
+            g.setColor(base.darker());
             g.setStroke(new BasicStroke(2f));
-            g.drawOval(x - 3, y - 3, d + 6, d + 6);
+            g.drawOval(x, y, d, d);
+            // 朝向指示线
+            int fx = (int) (u.x + Math.cos(u.facing) * r);
+            int fy = (int) (u.y + Math.sin(u.facing) * r);
+            g.drawLine((int) u.x, (int) u.y, fx, fy);
         }
-
-        // 层标记字母：L/W/A/U
-        g.setColor(Color.WHITE);
-        String mark = layerMark(u.def.movementType);
-        g.drawString(mark, (int) (u.x - 4), (int) (u.y + 4));
     }
 
     private void drawVisionCircles(Graphics2D g, World world) {
@@ -191,16 +183,6 @@ public class GameRenderer {
             g.drawLine((int) s.sx, (int) s.sy, (int) s.tx, (int) s.ty);
         }
         g.setStroke(old);
-    }
-
-    private static String layerMark(MovementType mt) {
-        switch (mt) {
-            case LAND:       return "L";
-            case WATER:      return "W";
-            case AIR:        return "A";
-            case UNDERWATER: return "U";
-            default:         return "?";
-        }
     }
 
     private static Color colorOf(TerrainType t) {

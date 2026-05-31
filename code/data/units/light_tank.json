@@ -6,7 +6,6 @@
   "movementType": "LAND",
   "moveSpeed": 1.1,
   "sightRange": 120,
-  "role": "STRIKE",
   "spritePath": "assets/units/tanks/tank.png",
   "attack": {
     "canAttackLand": true,

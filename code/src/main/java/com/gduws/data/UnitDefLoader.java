@@ -10,7 +10,6 @@ import java.util.Map;
 import com.gduws.model.AttackProfile;
 import com.gduws.model.MovementType;
 import com.gduws.model.UnitDef;
-import com.gduws.model.UnitRole;
 
 /** 从 JSON 文件加载 {@link UnitDef}，并缓存于按 id 索引的注册表。 */
 public class UnitDefLoader {
@@ -51,7 +50,6 @@ public class UnitDefLoader {
         def.movementType = MovementType.valueOf(str(root, "movementType"));
         def.moveSpeed = dbl(root, "moveSpeed", 1.0);
         def.sightRange = intVal(root, "sightRange");
-        def.role = UnitRole.valueOf(str(root, "role"));
         def.spritePath = root.containsKey("spritePath") ? (String) root.get("spritePath") : null;
 
         Map<String, Object> a = (Map<String, Object>) root.get("attack");

@@ -15,7 +15,7 @@ public final class AISystem {
         for (Unit u : w.units) {
             if (u.isDead()) continue;
             if (u.state == UnitState.DEAD) continue;
-            if (u.def.role == UnitRole.SCOUT) {
+            if (u.role == UnitRole.SCOUT) {
                 scout.update(u, w);
             } else {
                 strike.update(u, w);
