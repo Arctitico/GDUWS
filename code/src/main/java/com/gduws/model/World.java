@@ -25,9 +25,13 @@ public class World {
     private int tick = 0;
 
     // 胜负判定
+    /** 敌我双方长时间都无兵力损失（僵持）超过该 tick 数则提前判定结束（30 tick/s，约 30 秒） */
+    private static final int STALEMATE_TIMEOUT = 900;
     private final Map<Faction, Integer> initialCount = new EnumMap<>(Faction.class);
     private Faction winner;
     private boolean battleStarted;
+    private int totalAlive;       // 上一帧双方存活总数，用于检测兵力损失
+    private int lastLossTick;     // 最近一次出现兵力损失的 tick
 
     public World(GameMap map) {
         this.map = map;
@@ -112,6 +116,8 @@ public class World {
         }
         winner = null;
         battleStarted = true;
+        totalAlive = countAlive(Faction.PLAYER) + countAlive(Faction.ENEMY);
+        lastLossTick = tick;
     }
 
     /** 重置到布兵前状态：清空所有单位、情报、探索记录、tick */
@@ -125,6 +131,8 @@ public class World {
         initialCount.clear();
         winner = null;
         battleStarted = false;
+        totalAlive = 0;
+        lastLossTick = 0;
         tick = 0;
     }
 
@@ -157,6 +165,13 @@ public class World {
     }
 
     private void checkVictory() {
+        // 损失检测：只要双方存活总数下降，刷新“最近损失”时间戳
+        int nowAlive = countAlive(Faction.PLAYER) + countAlive(Faction.ENEMY);
+        if (nowAlive < totalAlive) {
+            lastLossTick = tick;
+        }
+        totalAlive = nowAlive;
+
         Faction loser = null;
         for (Faction f : Faction.values()) {
             int init = initialCountOf(f);
@@ -168,6 +183,10 @@ public class World {
                 break;
             }
         }
+        // 僵持超时：双方长时间无兵力损失，按损失率提前判定
+        if (loser == null && tick - lastLossTick >= STALEMATE_TIMEOUT) {
+            loser = higherLossFaction();
+        }
         if (loser != null) {
             for (Faction f : Faction.values()) {
                 if (f != loser) { winner = f; break; }
@@ -178,6 +197,19 @@ public class World {
                 u.moveGoal = null;
             }
         }
+    }
+
+    /** 按损失率选出失败方（损失率高者负）；相等时玩家获胜，故返回敌方 */
+    private Faction higherLossFaction() {
+        double playerLoss = lossRatioOf(Faction.PLAYER);
+        double enemyLoss = lossRatioOf(Faction.ENEMY);
+        return enemyLoss >= playerLoss ? Faction.ENEMY : Faction.PLAYER;
+    }
+
+    private double lossRatioOf(Faction f) {
+        int init = initialCountOf(f);
+        if (init <= 0) return 0.0;
+        return 1.0 - (double) countAlive(f) / init;
     }
 
     // ---- AI 辅助 ----
