@@ -203,7 +203,9 @@ public class GameFrame extends JFrame {
         }
         this.deploy = new DeployController(world, unitDefs, level);
         this.gamePanel = new GamePanel(world);
-        gamePanel.addMouseListener(new InputHandler(deploy, stateManager, this::refreshSidebar, gamePanel));
+        InputHandler input = new InputHandler(deploy, stateManager, this::refreshSidebar, gamePanel);
+        gamePanel.addMouseListener(input);
+        gamePanel.addMouseMotionListener(input);
         this.gameLoop = new GameLoop(world, stateManager, this::onTick);
         gameLoop.setOnVictory(this::onVictory);
 
@@ -336,7 +338,8 @@ public class GameFrame extends JFrame {
         deploy.reset(level);
         stateManager.setState(GameState.DEPLOY);
         if (startButton != null) startButton.setEnabled(true);
-        gamePanel.renderer().selectedUnit = null;
+        gamePanel.renderer().selectedUnits.clear();
+        gamePanel.renderer().overlayOnlySelected = false;
         gamePanel.renderer().showDeployZones = true;
         music.setScene(MusicPlayer.Scene.MENU);
         showCard(CARD_DEPLOY);
@@ -384,7 +387,8 @@ public class GameFrame extends JFrame {
         world.startBattle();
         startButton.setEnabled(false);
         gamePanel.renderer().showDeployZones = false;
-        gamePanel.renderer().selectedUnit = null;
+        gamePanel.renderer().selectedUnits.clear();
+        gamePanel.renderer().overlayOnlySelected = true;
         music.setScene(MusicPlayer.Scene.BATTLE);
         gameLoop.start();
         refreshSidebar();

@@ -9,6 +9,9 @@ import java.awt.Stroke;
 
 import java.awt.image.BufferedImage;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import com.gduws.model.CombatSystem;
 import com.gduws.model.Decoration;
 import com.gduws.model.Faction;
@@ -39,13 +42,16 @@ public class GameRenderer {
     private static final Color PATH_COLOR   = new Color(255, 255, 255, 160);
     private static final Color SIGHT_COLOR  = new Color(255, 255, 255, 35);
     private static final Color INTEL_COLOR  = new Color(255, 200, 0, 220);
+    private static final Color SELECT_COLOR = new Color(255, 235, 90, 230);
 
     /** 是否绘制玩家方调试覆盖层（视野圈、路径、已知敌情）。 */
     public boolean showOverlay = true;
     /** 是否绘制禁布区蒙版（仅布兵阶段开启）。 */
     public boolean showDeployZones = false;
-    /** 当前选中的单位（用于高亮）。 */
-    public Unit selectedUnit;
+    /** 当前选中的单位集合（可框选多个，用于高亮与覆盖层过滤）。 */
+    public final Set<Unit> selectedUnits = new HashSet<>();
+    /** 战斗阶段仅绘制被选中单位的攻击范围与寻路；布兵阶段绘制全部己方单位。 */
+    public boolean overlayOnlySelected = false;
 
     private final SpriteCache sprites = new SpriteCache();
     private final TerrainTextures terrain = new TerrainTextures();
@@ -63,6 +69,9 @@ public class GameRenderer {
 
         for (Unit u : world.units) {
             drawUnit(g, u);
+        }
+        if (!selectedUnits.isEmpty()) {
+            drawSelectionRings(g, world);
         }
         for (Unit u : world.units) {
             drawHpBar(g, u);
@@ -154,10 +163,23 @@ public class GameRenderer {
         }
     }
 
+    private void drawSelectionRings(Graphics2D g, World world) {
+        Stroke old = g.getStroke();
+        g.setStroke(new BasicStroke(2f));
+        g.setColor(SELECT_COLOR);
+        for (Unit u : world.units) {
+            if (!selectedUnits.contains(u)) continue;
+            double r = Math.max(6, u.def.radius) + 4;
+            g.drawOval((int) (u.x - r), (int) (u.y - r), (int) (r * 2), (int) (r * 2));
+        }
+        g.setStroke(old);
+    }
+
     private void drawVisionCircles(Graphics2D g, World world) {
         g.setColor(SIGHT_COLOR);
         for (Unit u : world.units) {
             if (u.faction != Faction.PLAYER) continue;
+            if (overlayOnlySelected && !selectedUnits.contains(u)) continue;
             int s = u.def.sightRange;
             if (s <= 0) continue;
             g.fillOval((int) (u.x - s), (int) (u.y - s), s * 2, s * 2);
@@ -170,6 +192,7 @@ public class GameRenderer {
         g.setColor(PATH_COLOR);
         for (Unit u : world.units) {
             if (u.faction != Faction.PLAYER || u.path == null || u.path.isEmpty()) continue;
+            if (overlayOnlySelected && !selectedUnits.contains(u)) continue;
             double px = u.x;
             double py = u.y;
             for (Point p : u.path) {

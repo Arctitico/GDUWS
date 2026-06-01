@@ -36,6 +36,10 @@ public class GamePanel extends JPanel {
     private int lastDragY;
     private boolean rightDragMoved = false;
 
+    /** 左键框选状态（屏幕坐标）：是否正在框选与矩形起止点 */
+    private boolean selecting = false;
+    private int selX0, selY0, selX1, selY1;
+
     public GamePanel(World world) {
         this.world = world;
         setPreferredSize(new Dimension(world.map.pixelWidth(), world.map.pixelHeight()));
@@ -80,6 +84,32 @@ public class GamePanel extends JPanel {
     /** 本次右键操作是否为拖动（用于让点击逻辑忽略拖动结束的释放） */
     public boolean rightDragMoved() {
         return rightDragMoved;
+    }
+
+    /** 开始框选：记录起点（屏幕坐标） */
+    public void beginSelection(int x, int y) {
+        selecting = true;
+        selX0 = selX1 = x;
+        selY0 = selY1 = y;
+        repaint();
+    }
+
+    /** 更新框选矩形的当前点（屏幕坐标） */
+    public void updateSelection(int x, int y) {
+        selX1 = x;
+        selY1 = y;
+        repaint();
+    }
+
+    /** 结束框选并清除矩形 */
+    public void endSelection() {
+        selecting = false;
+        repaint();
+    }
+
+    /** 是否正在进行框选 */
+    public boolean selecting() {
+        return selecting;
     }
 
     public GameRenderer renderer() {
@@ -182,5 +212,19 @@ public class GamePanel extends JPanel {
         g2.scale(scale, scale);
         renderer.render(g2, world);
         g2.dispose();
+
+        // 框选矩形绘制在屏幕坐标系（不受缩放/平移影响）
+        if (selecting) {
+            int x = Math.min(selX0, selX1);
+            int y = Math.min(selY0, selY1);
+            int w = Math.abs(selX1 - selX0);
+            int h = Math.abs(selY1 - selY0);
+            Graphics2D gs = (Graphics2D) g.create();
+            gs.setColor(new Color(120, 200, 255, 50));
+            gs.fillRect(x, y, w, h);
+            gs.setColor(new Color(120, 200, 255, 200));
+            gs.drawRect(x, y, w, h);
+            gs.dispose();
+        }
     }
 }
