@@ -31,7 +31,26 @@ try {
         New-Item -ItemType Directory -Path $distDir | Out-Null
     }
 
-    # 3) 打包可运行 JAR（含 Main-Class）
+    # 3) 将第三方依赖（jorbis/jogg）解包进 out/，并入单一可运行 JAR
+    $libsDir = Join-Path $ScriptRoot "libs"
+    if (Test-Path $libsDir) {
+        Push-Location $outDir
+        try {
+            foreach ($lib in Get-ChildItem -Path $libsDir -Filter *.jar) {
+                Write-Host "并入依赖 $($lib.Name) ..."
+                jar xf $lib.FullName
+                if ($LASTEXITCODE -ne 0) { throw "解包依赖失败：$($lib.Name)" }
+            }
+        }
+        finally {
+            Pop-Location
+        }
+        # 移除依赖自带的 META-INF，避免与下方生成的清单冲突
+        $libMeta = Join-Path $outDir "META-INF"
+        if (Test-Path $libMeta) { Remove-Item $libMeta -Recurse -Force }
+    }
+
+    # 4) 打包可运行 JAR（含 Main-Class）
     $manifest = Join-Path $env:TEMP "gduws_manifest.txt"
     Set-Content -Path $manifest -Value "Main-Class: com.gduws.Main`n" -Encoding ascii
     $jarPath = Join-Path $distDir "GDUWS.jar"
@@ -39,7 +58,7 @@ try {
     jar cfm $jarPath $manifest -C $outDir .
     if ($LASTEXITCODE -ne 0) { throw "JAR 打包失败" }
 
-    # 4) 拷贝运行期资源（相对路径 data/ 与 assets/）
+    # 5) 拷贝运行期资源（相对路径 data/ 与 assets/）
     Write-Host "拷贝资源 data/ assets/ ..."
     foreach ($res in @("data", "assets")) {
         $src = Join-Path $ScriptRoot $res
@@ -48,7 +67,7 @@ try {
         if (Test-Path $src) { Copy-Item $src $dst -Recurse }
     }
 
-    # 5) 用 csc.exe 编译原生启动器 -> dist\GDUWS.exe
+    # 6) 用 csc.exe 编译原生启动器 -> dist\GDUWS.exe
     $csc = Get-ChildItem "C:\Windows\Microsoft.NET\Framework64" -Filter csc.exe -Recurse |
         Sort-Object FullName | Select-Object -Last 1
     if (-not $csc) { throw "未找到 csc.exe（.NET Framework 编译器）" }
@@ -60,7 +79,7 @@ try {
         "/out:$exePath" $launcherSrc
     if ($LASTEXITCODE -ne 0) { throw "启动器编译失败" }
 
-    # 6) 拷贝内置 JRE（体积较大，已存在则跳过，可用 -Clean 强制重建）
+    # 7) 拷贝内置 JRE（体积较大，已存在则跳过，可用 -Clean 强制重建）
     if (-not (Test-Path $runtimeDir)) {
         Write-Host "拷贝内置 JRE -> dist\runtime（首次较慢）..."
         Copy-Item $jvmSource $runtimeDir -Recurse

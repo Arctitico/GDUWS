@@ -7,7 +7,7 @@ if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 Push-Location $ScriptRoot
 try {
     . .\use-java13.ps1
-    java -cp out com.gduws.Main
+    java -cp "out;libs/*" com.gduws.Main
 }
 finally {
     Pop-Location

@@ -34,6 +34,7 @@ import javax.swing.JToggleButton;
 import javax.swing.KeyStroke;
 import javax.swing.SwingConstants;
 
+import com.gduws.audio.MusicPlayer;
 import com.gduws.control.BattleSetup;
 import com.gduws.control.DeployController;
 import com.gduws.control.GameLoop;
@@ -56,6 +57,8 @@ public class GameFrame extends JFrame {
     private final UnitDefLoader unitDefs = new UnitDefLoader();
     private final BattleSetup battleSetup;
     private final List<LevelDef> levels = new ArrayList<>();
+    private final MusicPlayer music = new MusicPlayer();
+
 
     // 以下随选关切换而重建
     private LevelDef level;
@@ -99,6 +102,15 @@ public class GameFrame extends JFrame {
 
         showCard(CARD_SELECT);
         applyDisplayConfig(config);
+        startMusic();
+    }
+
+    /** 装载并启动背景音乐，进入菜单场景；音乐不可用时静默跳过 */
+    private void startMusic() {
+        if (music.loadDefault()) {
+            music.start();
+            music.setScene(MusicPlayer.Scene.MENU);
+        }
     }
 
     /** 扫描 data/levels 下全部 *.json 关卡，按文件名排序 */
@@ -325,6 +337,7 @@ public class GameFrame extends JFrame {
         stateManager.setState(GameState.DEPLOY);
         if (startButton != null) startButton.setEnabled(true);
         gamePanel.renderer().selectedUnit = null;
+        music.setScene(MusicPlayer.Scene.MENU);
         showCard(CARD_DEPLOY);
         refreshSidebar();
     }
@@ -337,6 +350,7 @@ public class GameFrame extends JFrame {
         gameLoop.stop();
         world.reset();
         stateManager.setState(GameState.LEVEL_SELECT);
+        music.setScene(MusicPlayer.Scene.MENU);
         showCard(CARD_SELECT);
         gamePanel.repaint();
     }
@@ -369,6 +383,7 @@ public class GameFrame extends JFrame {
         world.startBattle();
         startButton.setEnabled(false);
         gamePanel.renderer().selectedUnit = null;
+        music.setScene(MusicPlayer.Scene.BATTLE);
         gameLoop.start();
         refreshSidebar();
     }
@@ -392,6 +407,7 @@ public class GameFrame extends JFrame {
         resultTitle.setForeground(playerWin ? new Color(40, 130, 40) : new Color(180, 40, 40));
         resultStats.setText("<html>己方剩余：" + p + " / " + world.initialCountOf(Faction.PLAYER)
             + "<br>敌方剩余：" + en + " / " + world.initialCountOf(Faction.ENEMY) + "</html>");
+        music.setScene(MusicPlayer.Scene.MENU);
         showCard(CARD_RESULT);
         gamePanel.repaint();
     }

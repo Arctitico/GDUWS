@@ -4,15 +4,15 @@
   "maxHp": 200,
   "radius": 12,
   "movementType": "AIR",
-  "moveSpeed": 1.6,
-  "sightRange": 120,
+  "moveSpeed": 3.2,
+  "sightRange": 80,
   "spritePath": "assets/units/bomber/bomber.png",
   "attack": {
     "canAttackLand": true,
     "canAttackWaterSurface": true,
     "canAttackAir": false,
     "canAttackUnderwater": false,
-    "maxAttackRange": 100,
+    "maxAttackRange": 40,
     "directDamage": 40,
     "shootDelay": 90
   }

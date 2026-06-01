@@ -14,8 +14,17 @@ try {
     $listFile = Join-Path $env:TEMP "gduws_sources.txt"
     [System.IO.File]::WriteAllLines($listFile, $sources, (New-Object System.Text.UTF8Encoding($false)))
 
+    # 第三方依赖（OGG 解码 jorbis/jogg）加入编译类路径
+    $libsDir = Join-Path $ScriptRoot "libs"
+    $cp = (Get-ChildItem -Path $libsDir -Filter *.jar -ErrorAction SilentlyContinue |
+        ForEach-Object { $_.FullName }) -join ";"
+
     Write-Host "编译 $($sources.Count) 个源文件..."
-    javac -encoding UTF-8 -d $outDir "@$listFile"
+    if ($cp) {
+        javac -encoding UTF-8 -cp $cp -d $outDir "@$listFile"
+    } else {
+        javac -encoding UTF-8 -d $outDir "@$listFile"
+    }
     if ($LASTEXITCODE -ne 0) {
         throw "编译失败 (exit $LASTEXITCODE)"
     }

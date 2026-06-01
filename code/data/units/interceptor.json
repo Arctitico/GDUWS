@@ -4,7 +4,7 @@
   "maxHp": 160,
   "radius": 10,
   "movementType": "AIR",
-  "moveSpeed": 2.0,
+  "moveSpeed": 4.0,
   "sightRange": 130,
   "spritePath": "assets/units/interceptor/interceptor.png",
   "attack": {
