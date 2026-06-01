@@ -1,9 +1,16 @@
 ﻿# 编译 GDUWS 全部 Java 源码到 out/ 目录（供 build.ps1 / run.ps1 复用）
 $ScriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
+
+# Locate JDK
+if (-not (Test-Path "$env:JAVA_HOME\bin\javac.exe")) {
+    $found = (Get-Command javac -ErrorAction SilentlyContinue).Source
+    if ($found) { $env:JAVA_HOME = Split-Path -Parent (Split-Path -Parent $found) }
+    else { throw "JDK not found. Run: winget install EclipseAdoptium.Temurin.17.JDK" }
+}
+$env:PATH = "$env:JAVA_HOME\bin;$env:PATH"
+
 Push-Location $ScriptRoot
 try {
-    . .\use-java13.ps1
-
     $srcRoot = Join-Path $ScriptRoot "src\main\java"
     $outDir = Join-Path $ScriptRoot "out"
     if (-not (Test-Path $outDir)) {

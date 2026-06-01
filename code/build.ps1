@@ -1,22 +1,29 @@
 ﻿# 构建 GDUWS 可在 Windows 直接游玩的 exe 发行包
-# 产物：code\dist\GDUWS.exe（原生启动器）+ 内置 JRE + GDUWS.jar + 资源
+# 产物：code\dist\GDUWS.exe（原生启动器）+ jlink 最小运行时 + GDUWS.jar + 资源
 # 用法：
-#   .\build.ps1            常规构建（已存在的 runtime 不重复拷贝，加快增量构建）
-#   .\build.ps1 -Clean     清空 dist 后全量重建（重新拷贝内置 JRE）
+#   .\build.ps1            常规构建（已存在的 runtime 不重复生成，加快增量构建）
+#   .\build.ps1 -Clean     清空 dist 后全量重建（重新用 jlink 生成运行时）
 param(
     [switch]$Clean
 )
 
 $ErrorActionPreference = "Stop"
 $ScriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
+
+# Locate JDK
+if (-not (Test-Path "$env:JAVA_HOME\bin\javac.exe")) {
+    $found = (Get-Command javac -ErrorAction SilentlyContinue).Source
+    if ($found) { $env:JAVA_HOME = Split-Path -Parent (Split-Path -Parent $found) }
+    else { throw "JDK not found. Run: winget install EclipseAdoptium.Temurin.17.JDK" }
+}
+$env:PATH = "$env:JAVA_HOME\bin;$env:PATH"
+$JavaBin = Join-Path $env:JAVA_HOME "bin"
+
 Push-Location $ScriptRoot
 try {
-    . .\use-java13.ps1
-
     $outDir = Join-Path $ScriptRoot "out"
     $distDir = Join-Path $ScriptRoot "dist"
     $runtimeDir = Join-Path $distDir "runtime"
-    $jvmSource = $env:JAVA_HOME
 
     # 1) 编译源码 -> out/
     & (Join-Path $ScriptRoot "compile.ps1")
@@ -79,12 +86,28 @@ try {
         "/out:$exePath" $launcherSrc
     if ($LASTEXITCODE -ne 0) { throw "启动器编译失败" }
 
-    # 7) 拷贝内置 JRE（体积较大，已存在则跳过，可用 -Clean 强制重建）
+    # 7) 用 jlink 生成最小运行时（约 40-50 MB，远小于完整 JDK）
+    if ($Clean -and (Test-Path $runtimeDir)) {
+        Write-Host "清空旧 runtime ..."
+        Remove-Item $runtimeDir -Recurse -Force
+    }
     if (-not (Test-Path $runtimeDir)) {
-        Write-Host "拷贝内置 JRE -> dist\runtime（首次较慢）..."
-        Copy-Item $jvmSource $runtimeDir -Recurse
+        $jlink = Join-Path $JavaBin "jlink.exe"
+        if (-not (Test-Path $jlink)) {
+            throw "未找到 jlink.exe，请安装完整 JDK 17+（Temurin 等），仅 JRE 不够"
+        }
+        $jmodsDir = Join-Path $env:JAVA_HOME "jmods"
+        if (-not (Test-Path $jmodsDir) -or (Get-ChildItem $jmodsDir -Filter *.jmod).Count -eq 0) {
+            throw "JDK 缺少 jmods 模块文件，请安装完整 JDK 而非精简版"
+        }
+        Write-Host "jlink 生成最小运行时 -> dist\runtime ..."
+        & $jlink --add-modules java.desktop `
+            --output $runtimeDir `
+            --strip-debug --no-man-pages --no-header-files `
+            --compress=2
+        if ($LASTEXITCODE -ne 0) { throw "jlink 生成运行时失败" }
     } else {
-        Write-Host "已存在 dist\runtime，跳过拷贝（如需更新请用 -Clean）"
+        Write-Host "已存在 dist\runtime，跳过（如需更新请用 -Clean）"
     }
 
     Write-Host ""

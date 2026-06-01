@@ -1,5 +1,3 @@
-use-java13.ps1
-
 out
 dist
 *.class
