@@ -33,13 +33,23 @@ public class GameMap {
         if (!inBounds(cx, cy)) {
             return false;
         }
-        TerrainType t = tiles[cy][cx].terrain;
+        TerrainType.Pass pass = tiles[cy][cx].terrain.pass;
         switch (mt) {
-            case LAND:       return t == TerrainType.PLAIN;
+            case LAND:       return pass == TerrainType.Pass.LAND;
             case WATER:
-            case UNDERWATER: return t == TerrainType.WATER;
+            case UNDERWATER: return pass == TerrainType.Pass.WATER;
             default:         return false;
         }
+    }
+
+    /** 布兵阶段：玩家能否在该格放置单位（既要地形可通行，又要未被标记为禁布区）。 */
+    public boolean isDeployable(int cx, int cy, MovementType mt) {
+        return isPassable(cx, cy, mt) && inBounds(cx, cy) && tiles[cy][cx].deployable;
+    }
+
+    /** 该格是否被标记为禁止布兵（不含地形判断，供渲染禁布区蒙版使用）。 */
+    public boolean isDeployForbidden(int cx, int cy) {
+        return inBounds(cx, cy) && !tiles[cy][cx].deployable;
     }
 
     public int toCol(double px) { return (int) (px / tileSize); }

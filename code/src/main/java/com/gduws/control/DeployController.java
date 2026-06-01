@@ -11,7 +11,7 @@ import com.gduws.model.UnitDef;
 import com.gduws.model.UnitRole;
 import com.gduws.model.World;
 
-/** 布兵阶段逻辑：管理可用兵力预算、选中单位类型、放置/移除校验。 */
+/** 布兵阶段逻辑：管理可用兵力预算、选中单位类型、放置/移除校验 */
 public class DeployController {
 
     private final World world;
@@ -79,7 +79,7 @@ public class DeployController {
         return role == UnitRole.SCOUT ? "侦察" : "打击";
     }
 
-    /** 在像素坐标尝试放置当前选中的己方单位。成功返回 true。 */
+    /** 在像素坐标尝试放置当前选中的己方单位。成功返回 true */
     public boolean tryPlace(double px, double py) {
         if (selectedUnitId == null) {
             lastMessage = "请先选择单位类型";
@@ -96,6 +96,10 @@ public class DeployController {
             lastMessage = "该地形不能放置 " + def.displayName;
             return false;
         }
+        if (world.map.isDeployForbidden(col, row)) {
+            lastMessage = "该区域禁止布兵";
+            return false;
+        }
         if (world.unitAt(px, py, def.radius) != null) {
             lastMessage = "与已有单位重叠";
             return false;
@@ -110,7 +114,7 @@ public class DeployController {
         return true;
     }
 
-    /** 在像素坐标尝试移除一个己方单位（返还预算）。成功返回 true。 */
+    /** 在像素坐标尝试移除一个己方单位（返还预算）。成功返回 true */
     public boolean tryRemove(double px, double py) {
         Unit u = world.unitAt(px, py, 0);
         if (u == null || u.faction != Faction.PLAYER) {

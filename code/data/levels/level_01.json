@@ -1,18 +1,20 @@
 {
   "id": "level_01",
-  "name": "海陆遭遇战",
+  "name": "草地",
   "map": "data/maps/level_01.map",
   "playerBudget": {
-    "light_tank": 4,
-    "interceptor": 2,
-    "destroyer": 2
+    "light_tank": 10,
+    "interceptor": 1
   },
   "enemyUnits": [
-    { "unitId": "heavy_tank", "col": 6,  "row": 18, "role": "STRIKE" },
-    { "unitId": "heavy_tank", "col": 10, "row": 16, "role": "STRIKE" },
-    { "unitId": "light_tank", "col": 8,  "row": 17, "role": "SCOUT" },
-    { "unitId": "submarine",  "col": 22, "row": 10, "role": "STRIKE" },
-    { "unitId": "battleship", "col": 25, "row": 5,  "role": "STRIKE" },
-    { "unitId": "destroyer",  "col": 24, "row": 8,  "role": "SCOUT" }
+    { "unitId": "light_tank",  "col": 45, "row":  5, "role": "SCOUT"   },
+    { "unitId": "light_tank",  "col": 45, "row": 10, "role": "STRIKE"  },
+    { "unitId": "light_tank",  "col": 45, "row": 15, "role": "STRIKE"  },
+    { "unitId": "light_tank",  "col": 45, "row": 20, "role": "SCOUT"   },
+    { "unitId": "light_tank",  "col": 45, "row": 25, "role": "STRIKE"  },
+    { "unitId": "light_tank",  "col": 45, "row": 30, "role": "STRIKE"  },
+    { "unitId": "light_tank",  "col": 45, "row": 35, "role": "SCOUT"   },
+    { "unitId": "light_tank",  "col": 45, "row": 40, "role": "STRIKE"  },
+    { "unitId": "light_tank",  "col": 45, "row": 45, "role": "STRIKE"  }
   ]
 }

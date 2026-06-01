@@ -337,6 +337,7 @@ public class GameFrame extends JFrame {
         stateManager.setState(GameState.DEPLOY);
         if (startButton != null) startButton.setEnabled(true);
         gamePanel.renderer().selectedUnit = null;
+        gamePanel.renderer().showDeployZones = true;
         music.setScene(MusicPlayer.Scene.MENU);
         showCard(CARD_DEPLOY);
         refreshSidebar();
@@ -382,6 +383,7 @@ public class GameFrame extends JFrame {
         stateManager.setState(GameState.BATTLE);
         world.startBattle();
         startButton.setEnabled(false);
+        gamePanel.renderer().showDeployZones = false;
         gamePanel.renderer().selectedUnit = null;
         music.setScene(MusicPlayer.Scene.BATTLE);
         gameLoop.start();

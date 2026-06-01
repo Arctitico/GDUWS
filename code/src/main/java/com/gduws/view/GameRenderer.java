@@ -7,22 +7,31 @@ import java.awt.Point;
 import java.awt.RenderingHints;
 import java.awt.Stroke;
 
+import java.awt.image.BufferedImage;
+
 import com.gduws.model.CombatSystem;
+import com.gduws.model.Decoration;
 import com.gduws.model.Faction;
 import com.gduws.model.GameMap;
 import com.gduws.model.IntelBoard;
 import com.gduws.model.MovementType;
 import com.gduws.model.TerrainType;
+import com.gduws.model.Tile;
 import com.gduws.model.Unit;
 import com.gduws.model.World;
 
 /** 渲染战场：地形网格 + 单位 + 调试覆盖层（视野/路径/已知敌情）。 */
 public class GameRenderer {
 
-    private static final Color PLAIN_COLOR    = new Color(96, 152, 84);
-    private static final Color MOUNTAIN_COLOR = new Color(120, 110, 100);
+    private static final Color GRASS_COLOR    = new Color(96, 152, 84);
+    private static final Color DIRT_COLOR     = new Color(134, 98, 66);
+    private static final Color SAND_COLOR     = new Color(214, 190, 140);
+    private static final Color MOUNTAIN_COLOR = new Color(120, 116, 112);
+    private static final Color SHALLOW_COLOR  = new Color(86, 150, 200);
     private static final Color WATER_COLOR    = new Color(58, 110, 176);
+    private static final Color DEEP_COLOR     = new Color(36, 78, 140);
     private static final Color GRID_COLOR     = new Color(0, 0, 0, 40);
+    private static final Color FORBID_COLOR   = new Color(200, 40, 40, 90);
 
     private static final Color PLAYER_COLOR = new Color(70, 130, 220);
     private static final Color ENEMY_COLOR  = new Color(210, 70, 70);
@@ -33,10 +42,13 @@ public class GameRenderer {
 
     /** 是否绘制玩家方调试覆盖层（视野圈、路径、已知敌情）。 */
     public boolean showOverlay = true;
+    /** 是否绘制禁布区蒙版（仅布兵阶段开启）。 */
+    public boolean showDeployZones = false;
     /** 当前选中的单位（用于高亮）。 */
     public Unit selectedUnit;
 
     private final SpriteCache sprites = new SpriteCache();
+    private final TerrainTextures terrain = new TerrainTextures();
 
     public void render(Graphics2D g, World world) {
         g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
@@ -64,11 +76,39 @@ public class GameRenderer {
 
     private void drawTerrain(Graphics2D g, GameMap map) {
         int ts = map.tileSize;
+        // 地形纹理（无素材时回退纯色块）
         for (int r = 0; r < map.rows; r++) {
             for (int c = 0; c < map.cols; c++) {
-                TerrainType t = map.tileAt(c, r).terrain;
-                g.setColor(colorOf(t));
-                g.fillRect(c * ts, r * ts, ts, ts);
+                Tile tile = map.tileAt(c, r);
+                BufferedImage tex = terrain.terrain(tile.terrain);
+                if (tex != null) {
+                    g.drawImage(tex, c * ts, r * ts, ts, ts, null);
+                } else {
+                    g.setColor(colorOf(tile.terrain));
+                    g.fillRect(c * ts, r * ts, ts, ts);
+                }
+            }
+        }
+        // 装饰物覆盖层（树木 / 灌木 / 岩石）
+        for (int r = 0; r < map.rows; r++) {
+            for (int c = 0; c < map.cols; c++) {
+                Decoration deco = map.tileAt(c, r).decoration;
+                if (deco == null) continue;
+                BufferedImage img = terrain.decoration(deco);
+                if (img != null) {
+                    g.drawImage(img, c * ts, r * ts, ts, ts, null);
+                }
+            }
+        }
+        // 禁布区蒙版（仅布兵阶段）
+        if (showDeployZones) {
+            g.setColor(FORBID_COLOR);
+            for (int r = 0; r < map.rows; r++) {
+                for (int c = 0; c < map.cols; c++) {
+                    if (map.isDeployForbidden(c, r)) {
+                        g.fillRect(c * ts, r * ts, ts, ts);
+                    }
+                }
             }
         }
         // 网格线
@@ -193,10 +233,14 @@ public class GameRenderer {
 
     private static Color colorOf(TerrainType t) {
         switch (t) {
+            case DIRT:     return DIRT_COLOR;
+            case SAND:     return SAND_COLOR;
             case MOUNTAIN: return MOUNTAIN_COLOR;
+            case SHALLOW:  return SHALLOW_COLOR;
             case WATER:    return WATER_COLOR;
-            case PLAIN:
-            default:       return PLAIN_COLOR;
+            case DEEP:     return DEEP_COLOR;
+            case GRASS:
+            default:       return GRASS_COLOR;
         }
     }
 }
