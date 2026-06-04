@@ -22,6 +22,7 @@ import com.gduws.model.TerrainType;
 import com.gduws.model.Tile;
 import com.gduws.model.Unit;
 import com.gduws.model.World;
+import com.gduws.model.Wreckage;
 
 /** 渲染战场：地形网格 + 单位 + 覆盖层（攻击范围/路径/已知敌情）。 */
 public class GameRenderer {
@@ -59,6 +60,8 @@ public class GameRenderer {
     public void render(Graphics2D g, World world) {
         g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         drawTerrain(g, world.map);
+
+        drawWreckages(g, world);
 
         if (showOverlay) {
             drawAttackRangeCircles(g, world);
@@ -127,6 +130,13 @@ public class GameRenderer {
         }
         for (int r = 0; r <= map.rows; r++) {
             g.drawLine(0, r * ts, map.pixelWidth(), r * ts);
+        }
+    }
+
+    /** 绘制所有单位残骸（在地形之上、活单位之下） */
+    private void drawWreckages(Graphics2D g, World world) {
+        for (Wreckage w : world.wreckages) {
+            sprites.draw(g, w.deadSpritePath, w.x, w.y, w.facing);
         }
     }
 

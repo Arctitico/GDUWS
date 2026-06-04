@@ -14,6 +14,8 @@ public class World {
 
     public final GameMap map;
     public final List<Unit> units = new ArrayList<>();
+    /** 单位死亡后留下的残骸，保留到游戏结束（reset 时清空） */
+    public final List<Wreckage> wreckages = new ArrayList<>();
 
     private final Map<Faction, IntelBoard> intel = new EnumMap<>(Faction.class);
     private final VisionSystem visionSystem = new VisionSystem();
@@ -123,6 +125,7 @@ public class World {
     /** 重置到布兵前状态：清空所有单位、情报、探索记录、tick */
     public void reset() {
         units.clear();
+        wreckages.clear();
         for (Faction f : Faction.values()) {
             intel.get(f).clearAll();
         }
@@ -155,6 +158,11 @@ public class World {
             Unit u = it.next();
             if (u.isDead()) {
                 u.state = UnitState.DEAD;
+                // 生成残骸：由 spritePath 推导 _dead.png 路径
+                if (u.def.spritePath != null) {
+                    String deadPath = u.def.spritePath.replace(".png", "_dead.png");
+                    wreckages.add(new Wreckage(u.x, u.y, u.facing, deadPath));
+                }
                 for (IntelBoard b : intel.values()) b.forget(u);
                 for (Unit other : units) {
                     if (other.currentTarget == u) other.currentTarget = null;
