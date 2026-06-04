@@ -9,7 +9,7 @@
   "spritePath": "assets/units/heavy_battleship/heavy_battleship.png",
   "turretSpritePath": "assets/units/heavy_battleship/heavy_battleship_turret.png",
   "attack": {
-    "canAttackLand": false,
+    "canAttackLand": true,
     "canAttackWaterSurface": true,
     "canAttackAir": false,
     "canAttackUnderwater": false,

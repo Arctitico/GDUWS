@@ -9,7 +9,7 @@
   "spritePath": "assets/units/heavy_aa_ship/heavy_aa_ship.png",
   "turretSpritePath": "assets/units/heavy_aa_ship/anti_air_top_flakgun.png",
   "attack": {
-    "canAttackLand": false,
+    "canAttackLand": true,
     "canAttackWaterSurface": true,
     "canAttackAir": true,
     "canAttackUnderwater": true,

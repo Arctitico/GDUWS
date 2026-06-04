@@ -6,6 +6,7 @@ dist
 *.iml
 .vscode
 .opencode
+CLAUDE.md
 
 Thumbs.db
 .DS_Store

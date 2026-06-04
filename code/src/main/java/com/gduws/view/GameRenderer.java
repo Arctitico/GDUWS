@@ -23,7 +23,7 @@ import com.gduws.model.Tile;
 import com.gduws.model.Unit;
 import com.gduws.model.World;
 
-/** 渲染战场：地形网格 + 单位 + 调试覆盖层（视野/路径/已知敌情）。 */
+/** 渲染战场：地形网格 + 单位 + 覆盖层（攻击范围/路径/已知敌情）。 */
 public class GameRenderer {
 
     private static final Color GRASS_COLOR    = new Color(96, 152, 84);
@@ -39,18 +39,18 @@ public class GameRenderer {
     private static final Color PLAYER_COLOR = new Color(70, 130, 220);
     private static final Color ENEMY_COLOR  = new Color(210, 70, 70);
 
-    private static final Color PATH_COLOR   = new Color(255, 255, 255, 160);
-    private static final Color SIGHT_COLOR  = new Color(255, 255, 255, 35);
-    private static final Color INTEL_COLOR  = new Color(255, 200, 0, 220);
-    private static final Color SELECT_COLOR = new Color(255, 235, 90, 230);
+    private static final Color PATH_COLOR        = new Color(255, 255, 255, 160);
+    private static final Color ATTACK_RANGE_COLOR = new Color(255, 255, 255, 200);
+    private static final Color INTEL_COLOR       = new Color(255, 200, 0, 220);
+    private static final Color SELECT_COLOR      = new Color(255, 235, 90, 230);
 
-    /** 是否绘制玩家方调试覆盖层（视野圈、路径、已知敌情）。 */
+    /** 是否绘制玩家方覆盖层（攻击范围、路径、已知敌情）。 */
     public boolean showOverlay = true;
     /** 是否绘制禁布区蒙版（仅布兵阶段开启）。 */
     public boolean showDeployZones = false;
     /** 当前选中的单位集合（可框选多个，用于高亮与覆盖层过滤）。 */
     public final Set<Unit> selectedUnits = new HashSet<>();
-    /** 战斗阶段仅绘制被选中单位的攻击范围与寻路；布兵阶段绘制全部己方单位。 */
+    /** 战斗阶段仅绘制被选中单位的路径；布兵阶段绘制全部己方单位。（攻击范围始终仅对选中单位绘制，不受此开关控制。） */
     public boolean overlayOnlySelected = false;
 
     private final SpriteCache sprites = new SpriteCache();
@@ -61,7 +61,7 @@ public class GameRenderer {
         drawTerrain(g, world.map);
 
         if (showOverlay) {
-            drawVisionCircles(g, world);
+            drawAttackRangeCircles(g, world);
             drawPaths(g, world);
         }
 
@@ -175,15 +175,18 @@ public class GameRenderer {
         g.setStroke(old);
     }
 
-    private void drawVisionCircles(Graphics2D g, World world) {
-        g.setColor(SIGHT_COLOR);
-        for (Unit u : world.units) {
-            if (u.faction != Faction.PLAYER) continue;
-            if (overlayOnlySelected && !selectedUnits.contains(u)) continue;
-            int s = u.def.sightRange;
-            if (s <= 0) continue;
-            g.fillOval((int) (u.x - s), (int) (u.y - s), s * 2, s * 2);
+    private void drawAttackRangeCircles(Graphics2D g, World world) {
+        if (selectedUnits.isEmpty()) return;
+        Stroke old = g.getStroke();
+        g.setStroke(new BasicStroke(1.5f));
+        g.setColor(ATTACK_RANGE_COLOR);
+        for (Unit u : selectedUnits) {
+            if (u.def.attack == null || !u.def.attack.canAttackAnything()) continue;
+            int r = u.def.attack.maxAttackRange;
+            if (r <= 0) continue;
+            g.drawOval((int) (u.x - r), (int) (u.y - r), r * 2, r * 2);
         }
+        g.setStroke(old);
     }
 
     private void drawPaths(Graphics2D g, World world) {
