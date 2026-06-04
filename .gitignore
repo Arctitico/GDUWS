@@ -6,6 +6,8 @@ dist
 *.iml
 .vscode
 .opencode
+
+.claude
 CLAUDE.md
 
 Thumbs.db

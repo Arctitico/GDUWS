@@ -6,7 +6,7 @@
   "movementType": "UNDERWATER",
   "moveSpeed": 0.8,
   "sightRange": 100,
-  "spritePath": "assets/units/light_sub/light_sub.png",
+  "spritePath": "assets/units/heavy_sub/base.png",
   "attack": {
     "canAttackLand": false,
     "canAttackWaterSurface": true,
