@@ -40,7 +40,7 @@ public final class ScoutAI {
         scout(u, w, intel);
     }
 
-    /** 大胆沿既定路径前进；到达目标或周边敌人过多（避战）时才重选路径 */
+    /** 大胆沿既定路径前进；到达目标、周边敌人过多（避战）或友邻拥挤时才重选路径 */
     private void scout(Unit u, World w, IntelBoard intel) {
         u.state = UnitState.SCOUTING;
         u.currentTarget = null;
@@ -48,9 +48,25 @@ public final class ScoutAI {
         boolean needGoal = u.path == null || u.path.isEmpty();
         if (!needGoal) {
             boolean tooMany = countNearbyEnemies(u, w, DANGER_RADIUS) >= DANGER_ENEMY_COUNT;
-            // 路径未走完且敌人不算多 -> 迎着火力继续前进，不重算
-            if (!(tooMany && w.tickCount() % REPLAN_INTERVAL == 0)) {
+            boolean crowded = UnitSpacing.isCrowded(u, w);
+            boolean replanTick = w.tickCount() % REPLAN_INTERVAL == 0;
+            // 路径未走完且敌人不算多也不拥挤 -> 继续前进，不重算
+            if (!((tooMany || crowded) && replanTick)) {
                 return;
+            }
+            // 仅因拥挤（非避战）触发重规划：先错开到附近空位，避免继续扎堆
+            if (crowded && !tooMany) {
+                Point spreadSpot = UnitSpacing.findFreeNearbyTile(u, w);
+                if (spreadSpot != null) {
+                    int sc = w.map.toCol(u.x);
+                    int sr = w.map.toRow(u.y);
+                    u.path = w.pathfinder().findPath(u.def.movementType, sc, sr,
+                        spreadSpot.x, spreadSpot.y, false, intel);
+                    if (u.path != null && !u.path.isEmpty()) {
+                        u.moveGoal = u.path.peekLast();
+                        return;
+                    }
+                }
             }
         }
 
@@ -77,11 +93,37 @@ public final class ScoutAI {
         double dy = target.y - u.y;
         double dist = Math.sqrt(dx * dx + dy * dy);
 
-        if (dist <= u.def.attack.maxAttackRange) {
+        double maxRange = u.def.attack.maxAttackRange;
+        double pursueRange = maxRange * UnitSpacing.PURSUE_RATIO;
+
+        if (dist <= pursueRange) {
+            // 正在错位移动则继续走完，避免抖动
+            if (u.path != null && !u.path.isEmpty()) {
+                u.state = UnitState.MOVING_TO_TARGET;
+                return;
+            }
+            // 在射程内但与友邻挤在一起：错开到附近空位，否则原地开火
+            if (UnitSpacing.isCrowded(u, w)) {
+                Point spot = UnitSpacing.findApproachTile(u, w, target, maxRange);
+                if (spot != null
+                        && !(w.map.toCol(u.x) == spot.x && w.map.toRow(u.y) == spot.y)) {
+                    int sc = w.map.toCol(u.x);
+                    int sr = w.map.toRow(u.y);
+                    u.path = w.pathfinder().findPath(
+                        u.def.movementType, sc, sr, spot.x, spot.y, false, null);
+                    if (u.path != null && !u.path.isEmpty()) {
+                        u.moveGoal = u.path.peekLast();
+                        u.state = UnitState.MOVING_TO_TARGET;
+                        return;
+                    }
+                }
+            }
+            // 距离足够近：停下，由 CombatSystem 开火
             u.state = UnitState.ATTACKING;
             u.path = null;
             u.moveGoal = null;
         } else {
+            // 目标接近射程边缘或已超出：追击靠近
             u.state = UnitState.MOVING_TO_TARGET;
             boolean needPath = u.path == null || u.path.isEmpty()
                 || (w.tickCount() % REPLAN_INTERVAL == 0);
@@ -90,6 +132,12 @@ public final class ScoutAI {
                 int sr = w.map.toRow(u.y);
                 int gc = w.map.toCol(target.x);
                 int gr = w.map.toRow(target.y);
+                // 走向目标 pursueRange 内一处未被友邻占用的落点，避免多单位挤向同一格
+                Point approach = UnitSpacing.findApproachTile(u, w, target, pursueRange);
+                if (approach != null) {
+                    gc = approach.x;
+                    gr = approach.y;
+                }
                 u.path = w.pathfinder().findPath(u.def.movementType, sc, sr, gc, gr, false, null);
                 if (u.path != null && !u.path.isEmpty()) {
                     u.moveGoal = u.path.peekLast();
@@ -146,4 +194,5 @@ public final class ScoutAI {
         }
         return n;
     }
+
 }

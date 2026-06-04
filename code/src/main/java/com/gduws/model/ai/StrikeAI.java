@@ -21,11 +21,6 @@ public final class StrikeAI {
     private static final double RETREAT_DISTANCE = 260;
     /** 重新选路间隔 */
     private static final int REPLAN_INTERVAL = 20;
-    /** 友邻间距小于该像素视为挤在一起，需要错开 */
-    private static final double MIN_SEPARATION = 16;
-    /** 目标距离超过最大射程该比例时主动追击，把目标拉回有效射程内 */
-    private static final double PURSUE_RATIO = 0.9;
-
     public void update(Unit u, World w) {
         IntelBoard intel = w.intelOf(u.faction);
 
@@ -69,7 +64,7 @@ public final class StrikeAI {
         double maxRange = u.def.attack.maxAttackRange;
         // 追击阈值：目标超过最大射程的 90% 时即视为快要溜出射程，
         // 主动靠近把它拉回有效射程内
-        double pursueRange = maxRange * PURSUE_RATIO;
+        double pursueRange = maxRange * UnitSpacing.PURSUE_RATIO;
 
         if (dist <= pursueRange) {
             // 正在错位移动则继续走完，避免抖动
@@ -78,8 +73,8 @@ public final class StrikeAI {
                 return;
             }
             // 在射程内但与友邻挤在一起：错开到附近空位，否则原地开火
-            if (isCrowded(u, w)) {
-                Point spot = findApproachTile(u, w, target, maxRange);
+            if (UnitSpacing.isCrowded(u, w)) {
+                Point spot = UnitSpacing.findApproachTile(u, w, target, maxRange);
                 if (spot != null
                         && !(w.map.toCol(u.x) == spot.x && w.map.toRow(u.y) == spot.y)) {
                     int sc = w.map.toCol(u.x);
@@ -109,7 +104,7 @@ public final class StrikeAI {
                 int gr = w.map.toRow(target.y);
                 // 走向目标 90% 射程内一处未被友邻占用的落点，避免多单位挤向同一格；
                 // 找不到则退回目标格附近
-                Point approach = findApproachTile(u, w, target, pursueRange);
+                Point approach = UnitSpacing.findApproachTile(u, w, target, pursueRange);
                 if (approach != null) {
                     gc = approach.x;
                     gr = approach.y;
@@ -120,69 +115,6 @@ public final class StrikeAI {
                 }
             }
         }
-    }
-
-    /**
-     * 为本单位寻找一个可通行的接近落点：在目标周围由近及远搜索，
-     * 返回首个本单位移动域可通行、且落点中心位于本单位射程内的格
-     */
-    private Point findApproachTile(Unit u, World w, Unit target, double range) {
-        int tc = w.map.toCol(target.x);
-        int tr = w.map.toRow(target.y);
-        // 以射程换算的格数为半径上限，外加余量
-        int maxR = (int) Math.ceil(range / w.map.tileSize) + 2;
-        Point best = null;
-        double bestD2 = Double.MAX_VALUE;
-        for (int r = 1; r <= maxR; r++) {
-            for (int dy = -r; dy <= r; dy++) {
-                for (int dx = -r; dx <= r; dx++) {
-                    if (Math.max(Math.abs(dx), Math.abs(dy)) != r) continue;
-                    int nx = tc + dx;
-                    int ny = tr + dy;
-                    if (!w.map.isPassable(nx, ny, u.def.movementType)) continue;
-                    double cx = w.map.cellCenterX(nx);
-                    double cy = w.map.cellCenterY(ny);
-                    double ex = cx - target.x;
-                    double ey = cy - target.y;
-                    if (ex * ex + ey * ey > range * range) continue;
-                    // 已被其他友方单位占据或预订的落点跳过，避免扎堆
-                    if (tileTakenByFriendly(u, w, nx, ny)) continue;
-                    // 选离本单位最近的可行落点，减少绕路
-                    double ux = cx - u.x;
-                    double uy = cy - u.y;
-                    double d2 = ux * ux + uy * uy;
-                    if (d2 < bestD2) {
-                        bestD2 = d2;
-                        best = new Point(nx, ny);
-                    }
-                }
-            }
-            // 当前环已找到射程内落点即可停止外扩
-            if (best != null) break;
-        }
-        return best;
-    }
-
-    /** 本单位是否与其他友方单位挤在一起（间距过近） */
-    private boolean isCrowded(Unit u, World w) {
-        double min2 = MIN_SEPARATION * MIN_SEPARATION;
-        for (Unit o : w.units) {
-            if (o == u || o.isDead() || o.faction != u.faction) continue;
-            double dx = o.x - u.x;
-            double dy = o.y - u.y;
-            if (dx * dx + dy * dy < min2) return true;
-        }
-        return false;
-    }
-
-    /** 指定格是否已被其他友方单位占据（当前所在格）或预订（移动终点） */
-    private boolean tileTakenByFriendly(Unit self, World w, int col, int row) {
-        for (Unit o : w.units) {
-            if (o == self || o.isDead() || o.faction != self.faction) continue;
-            if (w.map.toCol(o.x) == col && w.map.toRow(o.y) == row) return true;
-            if (o.moveGoal != null && o.moveGoal.x == col && o.moveGoal.y == row) return true;
-        }
-        return false;
     }
 
     /** 在已知敌情中选最近、且本单位攻击域可命中的敌人 */
