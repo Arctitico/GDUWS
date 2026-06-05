@@ -5,7 +5,7 @@
   "radius": 15,
   "movementType": "WATER",
   "moveSpeed": 0.9,
-  "sightRange": 130,
+  "sightRange": 280,
   "spritePath": "assets/units/heavy_aa_ship/heavy_aa_ship.png",
   "turretSpritePath": "assets/units/heavy_aa_ship/anti_air_top_flakgun.png",
   "attack": {

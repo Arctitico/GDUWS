@@ -5,7 +5,7 @@
   "radius": 11,
   "movementType": "LAND",
   "moveSpeed": 1.1,
-  "sightRange": 120,
+  "sightRange": 260,
   "spritePath": "assets/units/tanks/tank.png",
   "turretSpritePath": "assets/units/tanks/tank_turret.png",
   "attack": {

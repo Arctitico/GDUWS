@@ -130,9 +130,10 @@ public class GameRenderer {
             drawHpBar(g, u);
         }
 
-        if (showOverlay) {
-            drawIntel(g, world, Faction.PLAYER);
-        }
+        // 这里会画一个黄色方框和问号，看起来有点奇怪，先注释掉
+        // if (showOverlay) {
+        //     drawIntel(g, world, Faction.PLAYER);
+        // }
     }
 
 
