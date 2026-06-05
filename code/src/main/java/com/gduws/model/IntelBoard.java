@@ -30,6 +30,14 @@ public class IntelBoard {
         known.remove(enemy);
     }
 
+    /**
+     * 移除过期敌情：自上次目击起超过 {@code timeout} tick 仍未被任一友方单位再次发现的敌人，
+     * 视为脱离视野（进入战争迷雾），从情报板剔除，使打击单位不再据此索敌。
+     */
+    public void expireStale(int currentTick, int timeout) {
+        known.values().removeIf(e -> currentTick - e.lastSeenTick > timeout);
+    }
+
     /** 清空所有已知敌情（用于重置） */
     public void clearAll() {
         known.clear();

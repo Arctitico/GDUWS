@@ -35,20 +35,19 @@ public class GameRenderer {
     private static final Color WATER_COLOR    = new Color(58, 110, 176);
     private static final Color DEEP_COLOR     = new Color(36, 78, 140);
     private static final Color GRID_COLOR     = new Color(0, 0, 0, 40);
-    private static final Color FORBID_COLOR   = new Color(200, 40, 40, 90);
 
     private static final Color PLAYER_COLOR = new Color(70, 130, 220);
     private static final Color ENEMY_COLOR  = new Color(210, 70, 70);
 
-    private static final Color PATH_COLOR        = new Color(255, 255, 255, 160);
+    private static final Color PATH_COLOR         = new Color(255, 255, 255, 160);
     private static final Color ATTACK_RANGE_COLOR = new Color(255, 255, 255, 200);
-    private static final Color INTEL_COLOR       = new Color(255, 200, 0, 220);
-    private static final Color SELECT_COLOR      = new Color(255, 235, 90, 230);
+    private static final Color INTEL_COLOR        = new Color(255, 200, 0, 220);
+    private static final Color SELECT_COLOR       = new Color(255, 235, 90, 230);
 
     /** 是否绘制玩家方覆盖层（攻击范围、路径、已知敌情）。 */
     public boolean showOverlay = true;
-    /** 是否绘制禁布区蒙版（仅布兵阶段开启）。 */
-    public boolean showDeployZones = false;
+    /** 战争迷雾模式：布兵阶段 DEPLOY、战斗阶段 BATTLE，其余 NONE。 */
+    public FogRenderer.Mode fogMode = FogRenderer.Mode.NONE;
     /** 当前选中的单位集合（可框选多个，用于高亮与覆盖层过滤）。 */
     public final Set<Unit> selectedUnits = new HashSet<>();
     /** 战斗阶段仅绘制被选中单位的路径；布兵阶段绘制全部己方单位。（攻击范围始终仅对选中单位绘制，不受此开关控制。） */
@@ -56,6 +55,37 @@ public class GameRenderer {
 
     private final SpriteCache sprites = new SpriteCache();
     private final TerrainTextures terrain = new TerrainTextures();
+    private final FogRenderer fog = new FogRenderer();
+
+    /**
+     * 该单位是否应被战争迷雾隐藏（不渲染）。
+     * <ul>
+     *   <li>布兵阶段（DEPLOY）：隐藏全部敌方预置单位（FR-11）</li>
+     *   <li>战斗阶段（BATTLE）：隐藏未落入己方视野并集的敌方单位</li>
+     * </ul>
+     * 己方单位始终可见。
+     */
+    private boolean hiddenByFog(World world, Unit u) {
+        if (u.faction == Faction.PLAYER) return false;
+        if (fogMode == FogRenderer.Mode.DEPLOY) return true;
+        if (fogMode == FogRenderer.Mode.BATTLE) return !visibleInBattle(world, u.x, u.y);
+        return false;
+    }
+
+    /** 战斗迷雾下：该世界坐标是否落在己方任一单位的视野范围内 */
+    private boolean visibleInBattle(World world, double px, double py) {
+        for (Unit u : world.units) {
+            if (u.faction != Faction.PLAYER || u.isDead()) continue;
+            int sight = u.def.sightRange;
+            if (sight <= 0) continue;
+            double dx = u.x - px;
+            double dy = u.y - py;
+            if (dx * dx + dy * dy <= (double) sight * sight) {
+                return true;
+            }
+        }
+        return false;
+    }
 
     public void render(Graphics2D g, World world) {
         g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
@@ -70,13 +100,21 @@ public class GameRenderer {
 
         drawShots(g, world);
 
+        // 战争迷雾：覆盖在地形/残骸/己方覆盖层之上，再在其上绘制可见单位
+        if (fogMode != FogRenderer.Mode.NONE) {
+            fog.render(g, world, fogMode);
+        }
+
         for (Unit u : world.units) {
+            // 迷雾隐藏的敌方单位（布兵期全部、战斗期视野外）不渲染
+            if (hiddenByFog(world, u)) continue;
             drawUnit(g, u);
         }
         if (!selectedUnits.isEmpty()) {
             drawSelectionRings(g, world);
         }
         for (Unit u : world.units) {
+            if (hiddenByFog(world, u)) continue;
             drawHpBar(g, u);
         }
 
@@ -109,17 +147,6 @@ public class GameRenderer {
                 BufferedImage img = terrain.decoration(deco);
                 if (img != null) {
                     g.drawImage(img, c * ts, r * ts, ts, ts, null);
-                }
-            }
-        }
-        // 禁布区蒙版（仅布兵阶段）
-        if (showDeployZones) {
-            g.setColor(FORBID_COLOR);
-            for (int r = 0; r < map.rows; r++) {
-                for (int c = 0; c < map.cols; c++) {
-                    if (map.isDeployForbidden(c, r)) {
-                        g.fillRect(c * ts, r * ts, ts, ts);
-                    }
                 }
             }
         }

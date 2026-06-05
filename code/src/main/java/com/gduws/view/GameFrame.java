@@ -342,7 +342,7 @@ public class GameFrame extends JFrame {
         if (startButton != null) startButton.setEnabled(true);
         gamePanel.renderer().selectedUnits.clear();
         gamePanel.renderer().overlayOnlySelected = false;
-        gamePanel.renderer().showDeployZones = true;
+        gamePanel.renderer().fogMode = FogRenderer.Mode.DEPLOY;
         music.setScene(MusicPlayer.Scene.MENU);
         showCard(CARD_DEPLOY);
         refreshSidebar();
@@ -396,9 +396,9 @@ public class GameFrame extends JFrame {
         stateManager.setState(GameState.BATTLE);
         world.startBattle();
         startButton.setEnabled(false);
-        gamePanel.renderer().showDeployZones = false;
         gamePanel.renderer().selectedUnits.clear();
         gamePanel.renderer().overlayOnlySelected = true;
+        gamePanel.renderer().fogMode = FogRenderer.Mode.BATTLE;
         music.setScene(MusicPlayer.Scene.BATTLE);
         gameLoop.start();
         refreshSidebar();
@@ -423,6 +423,7 @@ public class GameFrame extends JFrame {
         resultTitle.setForeground(playerWin ? new Color(40, 130, 40) : new Color(180, 40, 40));
         resultStats.setText("<html>己方剩余：" + p + " / " + world.initialCountOf(Faction.PLAYER)
             + "<br>敌方剩余：" + en + " / " + world.initialCountOf(Faction.ENEMY) + "</html>");
+        gamePanel.renderer().fogMode = FogRenderer.Mode.NONE;
         music.setScene(MusicPlayer.Scene.MENU);
         showCard(CARD_RESULT);
         gamePanel.repaint();
