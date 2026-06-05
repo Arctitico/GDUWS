@@ -13,6 +13,13 @@ public class AttackProfile {
     public int     directDamage;          // 直接伤害
     public int     shootDelay;            // 射击冷却（tick）
 
+    /** 弹种：子弹（快、单体）或炮弹（慢、群体）；默认子弹 */
+    public ProjectileType projectileType = ProjectileType.BULLET;
+    /** 射弹飞行速度（像素/tick）；炮弹通常远小于子弹 */
+    public double projectileSpeed = 8.0;
+    /** 群体伤害半径（像素）；仅炮弹生效，落点该半径内敌方单位按距离线性衰减受伤 */
+    public int    splashRadius = 0;
+
     /** 是否拥有任何攻击能力。 */
     public boolean canAttackAnything() {
         return canAttackLand || canAttackWaterSurface || canAttackAir || canAttackUnderwater;

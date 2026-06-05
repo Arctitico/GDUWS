@@ -9,6 +9,7 @@ import java.util.Map;
 
 import com.gduws.model.AttackProfile;
 import com.gduws.model.MovementType;
+import com.gduws.model.ProjectileType;
 import com.gduws.model.UnitDef;
 
 /** 从 JSON 文件加载 {@link UnitDef}，并缓存于按 id 索引的注册表。 */
@@ -63,6 +64,15 @@ public class UnitDefLoader {
             attack.maxAttackRange = intVal(a, "maxAttackRange");
             attack.directDamage = intVal(a, "directDamage");
             attack.shootDelay = intVal(a, "shootDelay");
+            // 弹种（缺省为子弹）：bullet=快速单体，shell=慢速群体
+            String pt = a.containsKey("projectileType") ? a.get("projectileType").toString() : "BULLET";
+            attack.projectileType = ProjectileType.valueOf(pt.toUpperCase());
+            // 飞行速度缺省：子弹 8.0、炮弹 3.0
+            double defSpeed = attack.projectileType == ProjectileType.SHELL ? 3.0 : 8.0;
+            attack.projectileSpeed = dbl(a, "projectileSpeed", defSpeed);
+            // 群体伤害半径缺省：炮弹 40、子弹 0
+            int defSplash = attack.projectileType == ProjectileType.SHELL ? 40 : 0;
+            attack.splashRadius = (int) Math.round(dbl(a, "splashRadius", defSplash));
         }
         def.attack = attack;
         return def;

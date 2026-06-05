@@ -15,6 +15,9 @@
     "canAttackUnderwater": false,
     "maxAttackRange": 180,
     "directDamage": 45,
-    "shootDelay": 110
+    "shootDelay": 110,
+    "projectileType": "shell",
+    "projectileSpeed": 3.2,
+    "splashRadius": 60
   }
 }

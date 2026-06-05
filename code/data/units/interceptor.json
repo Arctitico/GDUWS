@@ -14,6 +14,8 @@
     "canAttackUnderwater": false,
     "maxAttackRange": 110,
     "directDamage": 20,
-    "shootDelay": 35
+    "shootDelay": 35,
+    "projectileType": "bullet",
+    "projectileSpeed": 15.0
   }
 }

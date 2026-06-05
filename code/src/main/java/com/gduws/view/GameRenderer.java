@@ -18,6 +18,9 @@ import com.gduws.model.Faction;
 import com.gduws.model.GameMap;
 import com.gduws.model.IntelBoard;
 import com.gduws.model.MovementType;
+import com.gduws.model.Projectile;
+import com.gduws.model.ProjectileSystem;
+import com.gduws.model.ProjectileType;
 import com.gduws.model.TerrainType;
 import com.gduws.model.Tile;
 import com.gduws.model.Unit;
@@ -56,6 +59,14 @@ public class GameRenderer {
     private final SpriteCache sprites = new SpriteCache();
     private final TerrainTextures terrain = new TerrainTextures();
     private final FogRenderer fog = new FogRenderer();
+
+    // 射弹配色（FR-21）：子弹偏亮黄、炮弹偏橙；爆炸环暖色
+    private static final Color BULLET_CORE   = new Color(255, 244, 150);
+    private static final Color BULLET_TRAIL  = new Color(255, 220, 120, 150);
+    private static final Color SHELL_CORE    = new Color(255, 170, 70);
+    private static final Color SHELL_TRAIL   = new Color(255, 140, 60, 140);
+    private static final Color EXPLODE_OUTER = new Color(255, 150, 60);
+    private static final Color EXPLODE_INNER = new Color(255, 230, 160);
 
     /**
      * 该单位是否应被战争迷雾隐藏（不渲染）。
@@ -99,6 +110,7 @@ public class GameRenderer {
         }
 
         drawShots(g, world);
+        drawProjectiles(g, world);
 
         // 战争迷雾：覆盖在地形/残骸/己方覆盖层之上，再在其上绘制可见单位
         if (fogMode != FogRenderer.Mode.NONE) {
@@ -282,14 +294,70 @@ public class GameRenderer {
     }
 
     private void drawShots(Graphics2D g, World world) {
+        // 炮口闪光：开火瞬间在发射点画一小段亮线，体现射击动作
         Stroke old = g.getStroke();
-        g.setStroke(new BasicStroke(1.5f));
+        g.setStroke(new BasicStroke(2f));
         for (CombatSystem.ShotEvent s : world.combatSystem().recentShots) {
+            double ang = Math.atan2(s.ty - s.sy, s.tx - s.sx);
+            int fx = (int) (s.sx + Math.cos(ang) * 10);
+            int fy = (int) (s.sy + Math.sin(ang) * 10);
             Color c = (s.shooterFaction == Faction.PLAYER)
-                ? new Color(120, 200, 255, 220)
-                : new Color(255, 180, 120, 220);
+                ? new Color(180, 220, 255, 220)
+                : new Color(255, 210, 150, 220);
             g.setColor(c);
-            g.drawLine((int) s.sx, (int) s.sy, (int) s.tx, (int) s.ty);
+            g.drawLine((int) s.sx, (int) s.sy, fx, fy);
+        }
+        g.setStroke(old);
+    }
+
+    /**
+     * 绘制飞行中的射弹与命中爆炸（FR-21）
+     * <ul>
+     *   <li>子弹：小亮点 + 短拖尾，体现高速</li>
+     *   <li>炮弹：较大弹体 + 拖尾；落点播放扩散爆炸环</li>
+     * </ul>
+     */
+    private void drawProjectiles(Graphics2D g, World world) {
+        Stroke old = g.getStroke();
+        for (Projectile p : world.projectiles) {
+            if (p.exploded) {
+                if (p.isSplash()) drawExplosion(g, p);
+                continue;
+            }
+            boolean shell = p.type == ProjectileType.SHELL;
+            double len = shell ? 12 : 9;                 // 拖尾长度
+            double bx = p.x - Math.cos(p.facing) * len;
+            double by = p.y - Math.sin(p.facing) * len;
+            // 拖尾
+            g.setStroke(new BasicStroke(shell ? 3f : 2f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+            g.setColor(shell ? SHELL_TRAIL : BULLET_TRAIL);
+            g.drawLine((int) bx, (int) by, (int) p.x, (int) p.y);
+            // 弹体
+            int rad = shell ? 4 : 2;
+            g.setColor(shell ? SHELL_CORE : BULLET_CORE);
+            g.fillOval((int) (p.x - rad), (int) (p.y - rad), rad * 2, rad * 2);
+        }
+        g.setStroke(old);
+    }
+
+    /** 炮弹落点爆炸：随时间扩散的双层圆环，半径上限为群体伤害半径 */
+    private void drawExplosion(Graphics2D g, Projectile p) {
+        double t = Math.min(1.0, (double) p.explosionAge / ProjectileSystem.EXPLOSION_DURATION);
+        double maxR = Math.max(8, p.splashRadius);
+        double r = maxR * t;                 // 外环随时间扩散
+        int alpha = (int) (200 * (1.0 - t));  // 随时间淡出
+        if (alpha <= 0) return;
+        Stroke old = g.getStroke();
+        // 外环
+        g.setStroke(new BasicStroke(3f));
+        g.setColor(new Color(EXPLODE_OUTER.getRed(), EXPLODE_OUTER.getGreen(), EXPLODE_OUTER.getBlue(), alpha));
+        g.drawOval((int) (p.x - r), (int) (p.y - r), (int) (r * 2), (int) (r * 2));
+        // 内核（前半段更亮）
+        double ir = maxR * 0.35 * (1.0 - t);
+        int innerAlpha = (int) (220 * (1.0 - t));
+        if (ir > 1 && innerAlpha > 0) {
+            g.setColor(new Color(EXPLODE_INNER.getRed(), EXPLODE_INNER.getGreen(), EXPLODE_INNER.getBlue(), innerAlpha));
+            g.fillOval((int) (p.x - ir), (int) (p.y - ir), (int) (ir * 2), (int) (ir * 2));
         }
         g.setStroke(old);
     }

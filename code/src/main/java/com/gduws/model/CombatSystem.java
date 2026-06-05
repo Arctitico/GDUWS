@@ -4,15 +4,16 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 战斗系统：命中瞬时结算
+ * 战斗系统：选取目标并开火，生成飞行射弹（FR-21）
  * <ul>
  *   <li>遍历有攻击能力的单位，按攻击域过滤、在射程内选最近敌人</li>
- *   <li>面向目标、冷却就绪时扣 {@code directDamage}，重置 {@code shootCooldown}</li>
+ *   <li>面向目标、冷却就绪时向目标坐标发射一枚 {@link Projectile}，重置 {@code shootCooldown}</li>
+ *   <li>实际伤害结算延迟到射弹到达落点，由 {@link ProjectileSystem} 完成</li>
  * </ul>
  */
 public final class CombatSystem {
 
-    /** 最近一帧产生的开火事件（供渲染层画攻击连线） */
+    /** 最近一帧产生的开火事件（供渲染层画炮口闪光） */
     public final List<ShotEvent> recentShots = new ArrayList<>();
 
     public void update(World w) {
@@ -43,7 +44,10 @@ public final class CombatSystem {
             }
 
             if (u.shootCooldown == 0) {
-                target.hp -= ap.directDamage;
+                // 发射射弹：朝目标当前坐标飞行，到达后由 ProjectileSystem 结算伤害
+                w.addProjectile(new Projectile(
+                    ap.projectileType, u.faction, ap.directDamage, ap.splashRadius,
+                    u.x, u.y, target.x, target.y, ap.projectileSpeed));
                 u.shootCooldown = ap.shootDelay;
                 recentShots.add(new ShotEvent(u.x, u.y, target.x, target.y, u.faction));
             }
@@ -70,7 +74,7 @@ public final class CombatSystem {
         return best;
     }
 
-    /** 一次开火事件（用于渲染瞬时连线） */
+    /** 一次开火事件（用于渲染炮口闪光） */
     public static final class ShotEvent {
         public final double sx, sy, tx, ty;
         public final Faction shooterFaction;

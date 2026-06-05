@@ -16,12 +16,15 @@ public class World {
     public final List<Unit> units = new ArrayList<>();
     /** 单位死亡后留下的残骸，保留到游戏结束（reset 时清空） */
     public final List<Wreckage> wreckages = new ArrayList<>();
+    /** 飞行中的射弹（FR-21）：由攻击生成，到达落点后结算伤害 */
+    public final List<Projectile> projectiles = new ArrayList<>();
 
     private final Map<Faction, IntelBoard> intel = new EnumMap<>(Faction.class);
     private final VisionSystem visionSystem = new VisionSystem();
     private final MovementSystem movementSystem = new MovementSystem();
     private final AISystem aiSystem = new AISystem();
     private final CombatSystem combatSystem = new CombatSystem();
+    private final ProjectileSystem projectileSystem = new ProjectileSystem();
     private final Pathfinder pathfinder;
     private final ExplorationMap exploration;
     private int tick = 0;
@@ -48,6 +51,11 @@ public class World {
 
     public void addUnit(Unit u) {
         units.add(u);
+    }
+
+    /** 发射一枚射弹（由 {@link CombatSystem} 开火时调用） */
+    public void addProjectile(Projectile p) {
+        projectiles.add(p);
     }
 
     public void removeUnit(Unit u) {
@@ -128,6 +136,7 @@ public class World {
     public void reset() {
         units.clear();
         wreckages.clear();
+        projectiles.clear();
         for (Faction f : Faction.values()) {
             intel.get(f).clearAll();
         }
@@ -141,7 +150,7 @@ public class World {
         tick = 0;
     }
 
-    /** 推进一逻辑帧：视野 → AI → 移动 → 战斗 → 清理 → 胜负 */
+    /** 推进一逻辑帧：视野 → AI → 移动 → 战斗 → 射弹 → 清理 → 胜负 */
     public void tick() {
         if (winner != null) return;
         tick++;
@@ -154,6 +163,7 @@ public class World {
         aiSystem.update(this);
         movementSystem.update(this);
         combatSystem.update(this);
+        projectileSystem.update(this);
         removeDead();
         if (battleStarted) checkVictory();
     }
