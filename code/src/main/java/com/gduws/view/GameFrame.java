@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -46,6 +47,7 @@ import com.gduws.data.UnitDefLoader;
 import com.gduws.model.Faction;
 import com.gduws.model.GameMap;
 import com.gduws.model.LevelDef;
+import com.gduws.model.Unit;
 import com.gduws.model.UnitDef;
 import com.gduws.model.UnitRole;
 import com.gduws.model.World;
@@ -377,7 +379,15 @@ public class GameFrame extends JFrame {
         if (stateManager.is(GameState.DEPLOY)) {
             statusLabel.setText("<html>布兵中。" + safe(deploy.lastMessage()) + "</html>");
         } else if (stateManager.is(GameState.BATTLE)) {
-            statusLabel.setText("<html><b>战斗自动进行中</b>。一方损失 ≥90% 即结束。</html>");
+            Set<Unit> sel = gamePanel.renderer().selectedUnits;
+            if (sel.size() == 1) {
+                Unit u = sel.iterator().next();
+                String roleText = (u.role == UnitRole.SCOUT) ? "侦察 (Scout)" : "打击 (Strike)";
+                statusLabel.setText("<html><b>" + u.def.displayName + "</b> · " + roleText
+                    + "<br>HP: " + u.hp + " / " + u.def.maxHp + "</html>");
+            } else {
+                statusLabel.setText("<html><b>战斗自动进行中</b>。一方损失 ≥90% 即结束。</html>");
+            }
         }
         gamePanel.repaint();
     }

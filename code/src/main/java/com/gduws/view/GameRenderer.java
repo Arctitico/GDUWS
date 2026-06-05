@@ -186,7 +186,7 @@ public class GameRenderer {
     }
 
     private void drawAttackRangeCircles(Graphics2D g, World world) {
-        if (selectedUnits.isEmpty()) return;
+        if (selectedUnits.size() != 1) return;
         Stroke old = g.getStroke();
         g.setStroke(new BasicStroke(1.5f));
         g.setColor(ATTACK_RANGE_COLOR);
