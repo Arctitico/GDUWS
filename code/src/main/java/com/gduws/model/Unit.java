@@ -25,6 +25,9 @@ public class Unit {
     /** 任务角色（侦察 / 打击），可由玩家在布兵阶段为每个单位指派 */
     public UnitRole role;
 
+    /** 是否由打击单位因长时间空闲而自动转为侦察；发现新敌人后据此转回打击 */
+    public boolean autoScoutFromStrike = false;
+
     public Unit(UnitDef def, Faction faction, double x, double y) {
         this.def = def;
         this.faction = faction;

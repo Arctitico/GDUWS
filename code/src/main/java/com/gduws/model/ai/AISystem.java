@@ -20,6 +20,8 @@ public final class AISystem {
             if (u.state == UnitState.DEAD) continue;
             if (u.role == UnitRole.STRIKE) {
                 maybeConvertIdleStrike(u, w);
+            } else if (u.autoScoutFromStrike) {
+                maybeRevertAutoScout(u, w);
             }
             if (u.role == UnitRole.SCOUT) {
                 scout.update(u, w);
@@ -39,6 +41,23 @@ public final class AISystem {
         if (w.tickCount() - u.lastActiveTick >= STRIKE_IDLE_TIMEOUT) {
             u.role = UnitRole.SCOUT;
             u.state = UnitState.SCOUTING;
+            u.autoScoutFromStrike = true;
+            u.lastActiveTick = w.tickCount();
+        }
+    }
+
+    /**
+     * 由打击自动转为的侦察单位：一旦本阵营情报板出现已知敌人，
+     * 立即转回打击单位投入战斗，避免场上只剩侦察单位
+     */
+    private void maybeRevertAutoScout(Unit u, World w) {
+        if (w.intelOf(u.faction).hasAnyEnemy()) {
+            u.role = UnitRole.STRIKE;
+            u.state = UnitState.IDLE;
+            u.autoScoutFromStrike = false;
+            u.path = null;
+            u.moveGoal = null;
+            u.currentTarget = null;
             u.lastActiveTick = w.tickCount();
         }
     }
