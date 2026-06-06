@@ -5,7 +5,7 @@
   "radius": 10,
   "movementType": "AIR",
   "moveSpeed": 4.0,
-  "sightRange": 130,
+  "sightRange": 300,
   "spritePath": "assets/units/interceptor/interceptor.png",
   "attack": {
     "canAttackLand": false,

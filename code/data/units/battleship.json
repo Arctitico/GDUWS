@@ -5,7 +5,7 @@
   "radius": 18,
   "movementType": "WATER",
   "moveSpeed": 0.7,
-  "sightRange": 140,
+  "sightRange": 360,
   "spritePath": "assets/units/heavy_battleship/heavy_battleship.png",
   "turretSpritePath": "assets/units/heavy_battleship/heavy_battleship_turret.png",
   "attack": {

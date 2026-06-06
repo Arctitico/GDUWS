@@ -72,12 +72,21 @@ public final class ScoutAI {
 
         int sc = w.map.toCol(u.x);
         int sr = w.map.toRow(u.y);
-        Point regionCell = w.exploration().pickGoal(u.faction, sc, sr, u.def.movementType);
+        // 以底座朝向作为当前行进方向（列/行分量），供探索图抑制原路折返
+        double headingCx = Math.cos(u.facing);
+        double headingCy = Math.sin(u.facing);
+        Point regionCell = w.exploration().pickGoal(
+            u.faction, sc, sr, u.def.movementType, headingCx, headingCy);
         if (regionCell == null) return;
 
         // 避战寻路：威胁场让路径绕开已知敌人
         u.path = w.pathfinder().findPath(u.def.movementType, sc, sr,
             regionCell.x, regionCell.y, /*avoidEnemies=*/true, intel);
+        // 兜底：目标已保证可达，若避战寻路意外失败则退化为不避战直达，避免原地不动
+        if (u.path == null || u.path.isEmpty()) {
+            u.path = w.pathfinder().findPath(u.def.movementType, sc, sr,
+                regionCell.x, regionCell.y, /*avoidEnemies=*/false, null);
+        }
         if (u.path != null && !u.path.isEmpty()) {
             u.moveGoal = u.path.peekLast();
         } else {

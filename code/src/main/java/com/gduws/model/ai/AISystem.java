@@ -9,7 +9,7 @@ import com.gduws.model.World;
 public final class AISystem {
 
     /** 打击单位持续无活动超过该 tick 数则转为侦察单位 */
-    private static final int STRIKE_IDLE_TIMEOUT = 240;
+    private static final int STRIKE_IDLE_TIMEOUT = 150;
 
     private final ScoutAI scout = new ScoutAI();
     private final StrikeAI strike = new StrikeAI();

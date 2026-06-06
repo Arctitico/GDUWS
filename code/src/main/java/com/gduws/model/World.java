@@ -32,8 +32,8 @@ public class World {
     // 胜负判定
     /** 敌我双方长时间都无兵力损失（僵持）超过该 tick 数则提前判定结束（30 tick/s，约 30 秒） */
     private static final int STALEMATE_TIMEOUT = 900;
-    /** 情报记忆时长：敌人超过该 tick 数未被任一友方单位再次目击，则从情报板移除（30 tick/s，约 3 秒） */
-    private static final int INTEL_MEMORY_TIMEOUT = 90;
+    /** 情报记忆时长：敌人超过该 tick 数未被任一友方单位再次目击，则从情报板移除*/
+    private static final int INTEL_MEMORY_TIMEOUT = 300;
     private final Map<Faction, Integer> initialCount = new EnumMap<>(Faction.class);
     private Faction winner;
     private boolean battleStarted;
