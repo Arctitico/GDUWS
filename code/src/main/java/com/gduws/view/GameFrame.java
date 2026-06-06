@@ -6,9 +6,13 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
 import java.awt.GraphicsEnvironment;
 import java.awt.Rectangle;
 import java.awt.event.KeyEvent;
+import java.awt.image.BufferedImage;
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -34,6 +38,7 @@ import javax.swing.JPanel;
 import javax.swing.JToggleButton;
 import javax.swing.KeyStroke;
 import javax.swing.SwingConstants;
+import javax.imageio.ImageIO;
 
 import com.gduws.audio.MusicPlayer;
 import com.gduws.control.BattleSetup;
@@ -99,6 +104,7 @@ public class GameFrame extends JFrame {
         this.battleSetup = new BattleSetup(unitDefs);
 
         centerWrap.setBackground(Color.BLACK);
+        centerWrap.add(buildWelcomePanel(), BorderLayout.CENTER);
         add(centerWrap, BorderLayout.CENTER);
         add(buildSidebar(), BorderLayout.EAST);
 
@@ -155,6 +161,72 @@ public class GameFrame extends JFrame {
                 System.exit(0);
             }
         });
+    }
+
+    private JPanel buildWelcomePanel() {
+        BufferedImage bgImage = null;
+        try {
+            bgImage = ImageIO.read(new File("assets/welcome_background.png"));
+        } catch (IOException e) {
+            System.err.println("无法加载背景图片: " + e.getMessage());
+        }
+        
+        final BufferedImage background = bgImage;
+        JPanel panel = new JPanel() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                if (background != null) {
+                    Graphics2D g2d = (Graphics2D) g;
+                    int panelWidth = getWidth();
+                    int panelHeight = getHeight();
+                    int imgWidth = background.getWidth();
+                    int imgHeight = background.getHeight();
+                    
+                    double scale = Math.max((double) panelWidth / imgWidth, (double) panelHeight / imgHeight);
+                    int scaledWidth = (int) (imgWidth * scale);
+                    int scaledHeight = (int) (imgHeight * scale);
+                    int x = (panelWidth - scaledWidth) / 2;
+                    int y = (panelHeight - scaledHeight) / 2;
+                    
+                    g2d.drawImage(background, x, y, scaledWidth, scaledHeight, null);
+                } else {
+                    g.setColor(Color.BLACK);
+                    g.fillRect(0, 0, getWidth(), getHeight());
+                }
+            }
+        };
+        
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        panel.setOpaque(false);
+        
+        panel.add(Box.createVerticalGlue());
+        
+        JLabel titleLabel = new JLabel("GDUWS");
+        titleLabel.setFont(new Font("Dialog", Font.BOLD, 72));
+        titleLabel.setForeground(new Color(70, 130, 220));
+        titleLabel.setAlignmentX(JLabel.CENTER_ALIGNMENT);
+        panel.add(titleLabel);
+        
+        panel.add(Box.createVerticalStrut(20));
+        
+        JLabel subtitleLabel = new JLabel("Ghost Domains: Unmanned Warfare Sim");
+        subtitleLabel.setFont(new Font("Dialog", Font.PLAIN, 24));
+        subtitleLabel.setForeground(new Color(150, 150, 150));
+        subtitleLabel.setAlignmentX(JLabel.CENTER_ALIGNMENT);
+        panel.add(subtitleLabel);
+        
+        panel.add(Box.createVerticalStrut(40));
+        
+        JLabel hintLabel = new JLabel("请从右侧菜单选择关卡开始游戏");
+        hintLabel.setFont(new Font("Dialog", Font.PLAIN, 16));
+        hintLabel.setForeground(new Color(100, 100, 100));
+        hintLabel.setAlignmentX(JLabel.CENTER_ALIGNMENT);
+        panel.add(hintLabel);
+        
+        panel.add(Box.createVerticalGlue());
+        
+        return panel;
     }
 
     private JPanel buildSidebar() {
