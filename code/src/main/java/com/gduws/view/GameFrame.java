@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -38,6 +39,8 @@ import javax.swing.JPanel;
 import javax.swing.JToggleButton;
 import javax.swing.KeyStroke;
 import javax.swing.SwingConstants;
+import javax.swing.Timer;
+import javax.swing.ImageIcon;
 import javax.imageio.ImageIO;
 
 import com.gduws.audio.MusicPlayer;
@@ -164,24 +167,22 @@ public class GameFrame extends JFrame {
     }
 
     private JPanel buildWelcomePanel() {
-        BufferedImage bgImage = null;
-        try {
-            bgImage = ImageIO.read(new File("assets/welcome_background.png"));
-        } catch (IOException e) {
-            System.err.println("无法加载背景图片: " + e.getMessage());
+        ImageIcon gifIcon = null;
+        File gifFile = new File("assets/welcome_background.gif");
+        if (gifFile.exists()) {
+            gifIcon = new ImageIcon(gifFile.getPath());
         }
         
-        final BufferedImage background = bgImage;
+        final ImageIcon icon = gifIcon;
         JPanel panel = new JPanel() {
             @Override
             protected void paintComponent(Graphics g) {
                 super.paintComponent(g);
-                if (background != null) {
-                    Graphics2D g2d = (Graphics2D) g;
+                if (icon != null) {
                     int panelWidth = getWidth();
                     int panelHeight = getHeight();
-                    int imgWidth = background.getWidth();
-                    int imgHeight = background.getHeight();
+                    int imgWidth = icon.getIconWidth();
+                    int imgHeight = icon.getIconHeight();
                     
                     double scale = Math.max((double) panelWidth / imgWidth, (double) panelHeight / imgHeight);
                     int scaledWidth = (int) (imgWidth * scale);
@@ -189,13 +190,18 @@ public class GameFrame extends JFrame {
                     int x = (panelWidth - scaledWidth) / 2;
                     int y = (panelHeight - scaledHeight) / 2;
                     
-                    g2d.drawImage(background, x, y, scaledWidth, scaledHeight, null);
+                    g.drawImage(icon.getImage(), x, y, scaledWidth, scaledHeight, null);
                 } else {
                     g.setColor(Color.BLACK);
                     g.fillRect(0, 0, getWidth(), getHeight());
                 }
             }
         };
+        
+        if (icon != null) {
+            Timer animTimer = new Timer(50, e -> panel.repaint());
+            animTimer.start();
+        }
         
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
         panel.setOpaque(false);
