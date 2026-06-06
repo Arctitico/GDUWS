@@ -4,13 +4,14 @@
 # Standalone 扫描 out-test 执行全部 @Test。所有依赖 jar 均位于 libs/。
 #
 # 用法：
-#   .\test.ps1                                            # 运行全部测试
-#   .\test.ps1 com.gduws.model.PathfinderTest             # 仅运行某个测试类
+#   .\test.ps1                                           # 终端无界面运行全部测试（默认）
+#   .\test.ps1 -Select com.gduws.model.PathfinderTest    # 仅运行某个测试类
+#   .\test.ps1 -Visual                                   # 打开可视化场景回放器，亲眼看战斗推演/AI
+param(
+    [switch]$Visual,
+    [string]$Select
+)
 $ScriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
-
-# 兼容简单参数：.\test.ps1 <fullyQualifiedTestClass> 仅运行某个测试类
-$paramSelect = $null
-if ($args.Count -ge 1) { $paramSelect = $args[0] }
 
 # 定位 JDK
 if (-not (Test-Path "$env:JAVA_HOME\bin\javac.exe")) {
@@ -56,13 +57,21 @@ try {
     javac -encoding UTF-8 -cp "$outDir;$libsCp" -d $testOut "@$testList"
     if ($LASTEXITCODE -ne 0) { throw "测试源码编译失败" }
 
-    # 3) 运行 JUnit（仅扫描 out-test 中的测试类，out/ 与 libs 提供链接依赖）
+    $runtimeCp = "$testOut;$outDir;$libsCp"
+
+    # 可视化模式：打开场景回放器，逐 tick 渲染战斗推演与 AI 行为（演示用，断言仍以 JUnit 为准）
+    if ($Visual) {
+        Write-Host "启动可视化场景回放器 ..."
+        java -cp $runtimeCp com.gduws.testkit.ScenarioViewer
+        exit $LASTEXITCODE
+    }
+
+    # 默认：无界面运行 JUnit，终端输出测试结果（仅扫描 out-test，out/ 与 libs 提供链接依赖）
     # 默认扫描过滤器只匹配 *Test，需追加 *IT 以纳入 integration 包下的集成测试
     $includePattern = '^(Test.*|.+[.$]Test.*|.*Tests?|.*TestCase|.*IT)$'
-    $runtimeCp = "$testOut;$outDir;$libsCp"
     Write-Host "运行测试 ..."
-    if ($paramSelect) {
-        java -jar $junitJar execute -cp $runtimeCp --select-class=$paramSelect --details=tree
+    if ($Select) {
+        java -jar $junitJar execute -cp $runtimeCp --select-class=$Select --details=tree
     } else {
         java -jar $junitJar execute -cp $runtimeCp --scan-class-path=$testOut `
             --include-classname=$includePattern --details=tree
