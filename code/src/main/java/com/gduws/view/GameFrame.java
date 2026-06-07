@@ -10,6 +10,8 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.GraphicsEnvironment;
 import java.awt.Rectangle;
+import java.awt.RenderingHints;
+import java.awt.BasicStroke;
 import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
 import java.io.File;
@@ -109,9 +111,7 @@ public class GameFrame extends JFrame {
         centerWrap.setBackground(Color.BLACK);
         centerWrap.add(buildWelcomePanel(), BorderLayout.CENTER);
         add(centerWrap, BorderLayout.CENTER);
-        add(buildSidebar(), BorderLayout.EAST);
 
-        showCard(CARD_SELECT);
         applyDisplayConfig(config);
         startMusic();
     }
@@ -222,17 +222,143 @@ public class GameFrame extends JFrame {
         subtitleLabel.setAlignmentX(JLabel.CENTER_ALIGNMENT);
         panel.add(subtitleLabel);
         
-        panel.add(Box.createVerticalStrut(40));
+        panel.add(Box.createVerticalStrut(60));
         
-        JLabel hintLabel = new JLabel("请从右侧菜单选择关卡开始游戏");
-        hintLabel.setFont(new Font("Dialog", Font.PLAIN, 16));
-        hintLabel.setForeground(new Color(100, 100, 100));
-        hintLabel.setAlignmentX(JLabel.CENTER_ALIGNMENT);
-        panel.add(hintLabel);
+        JButton grassTestBtn = createTransparentButton("草地测试", 200, 45);
+        grassTestBtn.addActionListener(e -> showLevelSelect());
+        panel.add(grassTestBtn);
+        
+        panel.add(Box.createVerticalStrut(15));
+        
+        JButton mapTestBtn = createTransparentButton("地图测试", 200, 45);
+        mapTestBtn.addActionListener(e -> showLevelSelect());
+        panel.add(mapTestBtn);
+        
+        panel.add(Box.createVerticalStrut(15));
+        
+        JButton textureTestBtn = createTransparentButton("纹理测试", 200, 45);
+        textureTestBtn.addActionListener(e -> showLevelSelect());
+        panel.add(textureTestBtn);
+        
+        panel.add(Box.createVerticalStrut(30));
+        
+        JButton exitBtn = createTransparentButton("退出游戏", 150, 35);
+        exitBtn.setFont(new Font("Dialog", Font.PLAIN, 16));
+        exitBtn.addActionListener(e -> System.exit(0));
+        panel.add(exitBtn);
         
         panel.add(Box.createVerticalGlue());
         
         return panel;
+    }
+    
+    private JButton createTransparentButton(String text, int width, int height) {
+        JButton btn = new JButton(text) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2d = (Graphics2D) g.create();
+                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                
+                if (getModel().isRollover()) {
+                    g2d.setColor(new Color(70, 130, 220, 180));
+                } else {
+                    g2d.setColor(new Color(30, 30, 30, 150));
+                }
+                
+                g2d.fillRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 10, 10);
+                
+                if (getModel().isRollover()) {
+                    g2d.setColor(new Color(100, 180, 255));
+                    g2d.setStroke(new BasicStroke(2f));
+                } else {
+                    g2d.setColor(new Color(70, 130, 220, 200));
+                    g2d.setStroke(new BasicStroke(1.5f));
+                }
+                g2d.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 10, 10);
+                
+                g2d.dispose();
+                super.paintComponent(g);
+            }
+        };
+        
+        btn.setFont(new Font("Dialog", Font.BOLD, 18));
+        btn.setAlignmentX(JLabel.CENTER_ALIGNMENT);
+        btn.setMaximumSize(new Dimension(width, height));
+        btn.setForeground(Color.WHITE);
+        btn.setOpaque(false);
+        btn.setContentAreaFilled(false);
+        btn.setBorderPainted(false);
+        btn.setFocusPainted(false);
+        
+        return btn;
+    }
+    
+    private void showLevelSelect() {
+        BufferedImage bgImage = null;
+        try {
+            bgImage = ImageIO.read(new File("assets/welcome_background.png"));
+        } catch (IOException e) {
+            System.err.println("无法加载背景图片: " + e.getMessage());
+        }
+        
+        final BufferedImage background = bgImage;
+        JPanel waitingPanel = new JPanel() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                if (background != null) {
+                    Graphics2D g2d = (Graphics2D) g;
+                    int panelWidth = getWidth();
+                    int panelHeight = getHeight();
+                    int imgWidth = background.getWidth();
+                    int imgHeight = background.getHeight();
+                    
+                    double scale = Math.max((double) panelWidth / imgWidth, (double) panelHeight / imgHeight);
+                    int scaledWidth = (int) (imgWidth * scale);
+                    int scaledHeight = (int) (imgHeight * scale);
+                    int x = (panelWidth - scaledWidth) / 2;
+                    int y = (panelHeight - scaledHeight) / 2;
+                    
+                    g2d.drawImage(background, x, y, scaledWidth, scaledHeight, null);
+                } else {
+                    g.setColor(Color.BLACK);
+                    g.fillRect(0, 0, getWidth(), getHeight());
+                }
+            }
+        };
+        
+        waitingPanel.setLayout(new BoxLayout(waitingPanel, BoxLayout.Y_AXIS));
+        waitingPanel.setOpaque(false);
+        waitingPanel.add(Box.createVerticalGlue());
+        
+        JLabel waitLabel = new JLabel("请从右侧选择关卡");
+        waitLabel.setFont(new Font("Dialog", Font.BOLD, 32));
+        waitLabel.setForeground(new Color(200, 200, 200));
+        waitLabel.setAlignmentX(JLabel.CENTER_ALIGNMENT);
+        waitingPanel.add(waitLabel);
+        
+        waitingPanel.add(Box.createVerticalStrut(20));
+        
+        JLabel hintLabel = new JLabel("选择关卡后将进入部署阶段");
+        hintLabel.setFont(new Font("Dialog", Font.PLAIN, 16));
+        hintLabel.setForeground(new Color(150, 150, 150));
+        hintLabel.setAlignmentX(JLabel.CENTER_ALIGNMENT);
+        waitingPanel.add(hintLabel);
+        
+        waitingPanel.add(Box.createVerticalGlue());
+        
+        centerWrap.removeAll();
+        centerWrap.add(waitingPanel, BorderLayout.CENTER);
+        centerWrap.revalidate();
+        centerWrap.repaint();
+        
+        if (getComponentCount() == 1) {
+            add(buildSidebar(), BorderLayout.EAST);
+        }
+        
+        showCard(CARD_SELECT);
+        revalidate();
+        repaint();
     }
 
     private JPanel buildSidebar() {
@@ -315,15 +441,51 @@ public class GameFrame extends JFrame {
         ButtonGroup group = new ButtonGroup();
         boolean first = true;
         for (String unitId : level.playerBudget.keySet()) {
+            UnitDef def = deploy.defOf(unitId);
+            
+            JPanel unitPanel = new JPanel();
+            unitPanel.setLayout(new BoxLayout(unitPanel, BoxLayout.X_AXIS));
+            unitPanel.setAlignmentX(LEFT_ALIGNMENT);
+            unitPanel.setMaximumSize(new Dimension(240, 50));
+            unitPanel.setOpaque(false);
+            
+            JLabel iconLabel = new JLabel();
+            iconLabel.setPreferredSize(new Dimension(40, 40));
+            if (def != null && def.spritePath != null) {
+                try {
+                    BufferedImage unitImg = ImageIO.read(new File(def.spritePath));
+                    if (unitImg != null) {
+                        int imgSize = Math.max(unitImg.getWidth(), unitImg.getHeight());
+                        BufferedImage scaled = new BufferedImage(40, 40, BufferedImage.TYPE_INT_ARGB);
+                        Graphics2D g2d = scaled.createGraphics();
+                        g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+                        double scale = 40.0 / imgSize;
+                        int w = (int) (unitImg.getWidth() * scale);
+                        int h = (int) (unitImg.getHeight() * scale);
+                        int x = (40 - w) / 2;
+                        int y = (40 - h) / 2;
+                        g2d.drawImage(unitImg, x, y, w, h, null);
+                        g2d.dispose();
+                        iconLabel.setIcon(new ImageIcon(scaled));
+                    }
+                } catch (Exception ex) {
+                    // 忽略加载失败
+                }
+            }
+            unitPanel.add(iconLabel);
+            unitPanel.add(Box.createHorizontalStrut(8));
+            
             JToggleButton btn = new JToggleButton();
             btn.setAlignmentX(LEFT_ALIGNMENT);
-            btn.setMaximumSize(new Dimension(240, 30));
+            btn.setMaximumSize(new Dimension(190, 50));
             btn.addActionListener(e -> { deploy.selectUnit(unitId); refreshSidebar(); });
             if (first) { btn.setSelected(true); first = false; }
             group.add(btn);
             unitButtons.put(unitId, btn);
+            
+            unitPanel.add(btn);
             deployCard.add(Box.createVerticalStrut(4));
-            deployCard.add(btn);
+            deployCard.add(unitPanel);
         }
 
         deployCard.add(Box.createVerticalStrut(12));
