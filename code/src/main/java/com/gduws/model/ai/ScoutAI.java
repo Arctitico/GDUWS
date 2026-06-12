@@ -19,11 +19,11 @@ public final class ScoutAI {
     /** 判定"敌人太多需避战"的半径（像素） */
     private static final double DANGER_RADIUS = 200;
     /** 该半径内敌人数量达到此值才避战重规划路径 */
-    private static final int DANGER_ENEMY_COUNT = 5;
+    private static final int DANGER_ENEMY_COUNT = 3;
     /** 主动出击的评估半径（像素） */
     private static final double ENGAGE_RADIUS = 260;
     /** 己方兵力 ≥ 敌方 * 该比例时才主动出击 */
-    private static final double ENGAGE_POWER_RATIO = 1.8;
+    private static final double ENGAGE_POWER_RATIO = 1.5;
 
     public void update(Unit u, World w) {
         IntelBoard intel = w.intelOf(u.faction);

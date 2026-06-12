@@ -103,7 +103,117 @@ public final class ScenarioViewer {
             return w;
         }, ScenarioViewer::battleStatus));
 
-        // 场景 3：真实关卡 level_01（真实地图/贴图，对应 DataDrivenLoadIT 的数据），仅在能定位到 data/ 时加入
+        // 场景 3：90% 损失判定 - 玩家存活率 5%
+        list.add(new Scenario("胜负判定：90% 损失 - 玩家败", () -> {
+            World w = new World(Fixtures.landMap(30, 30));
+            for (int i = 0; i < 20; i++) {
+                Unit u = Fixtures.unitAtCell(w.map, Fixtures.landTank(), Faction.PLAYER, 5 + i/4, 10 + i%4);
+                w.addUnit(u);
+                if (i < 19) u.hp = 0;
+            }
+            for (int i = 0; i < 15; i++) {
+                w.addUnit(Fixtures.unitAtCell(w.map, Fixtures.landTank(), Faction.ENEMY, 25, 10 + i));
+            }
+            w.startBattle();
+            return w;
+        }, w -> battleStatus(w) + String.format("　|　玩家损失率：%.0f%%",
+            (1.0 - (double)w.countAlive(Faction.PLAYER) / w.initialCountOf(Faction.PLAYER)) * 100)));
+
+        // 场景 4：僵持超时判定
+        list.add(new Scenario("胜负判定：僵持超时 - 双方隔离", () -> {
+            World w = Fixtures.separatedWorld(5, 5);
+            w.startBattle();
+            return w;
+        }, w -> battleStatus(w) + String.format("　|　僵持 %d/2500 tick", w.tickCount())));
+
+        // 场景 5：打击单位空闲转侦察
+        list.add(new Scenario("AI 行为：打击单位 IDLE 90 tick 转侦察", () -> {
+            World w = new World(Fixtures.landMap(30, 30));
+            Unit u = Fixtures.unitAtCell(w.map, Fixtures.landTank(), Faction.PLAYER, 15, 15);
+            u.role = UnitRole.STRIKE;
+            w.addUnit(u);
+            return w;
+        }, w -> {
+            Unit u = w.units.get(0);
+            return String.format("tick %d　|　角色：%s　|　状态：%s", w.tickCount(),
+                u.role == UnitRole.SCOUT ? "侦察 ✓" : "打击", u.state);
+        }));
+
+        // 场景 6：射弹飞行与命中
+        list.add(new Scenario("战斗系统：射弹飞行轨迹与命中", () -> {
+            World w = new World(Fixtures.landMap(30, 20));
+            w.addUnit(Fixtures.unitAtCell(w.map, Fixtures.landTank(), Faction.PLAYER, 5, 10));
+            w.addUnit(Fixtures.unitAtCell(w.map, Fixtures.landTank(), Faction.ENEMY, 12, 10));
+            w.startBattle();
+            return w;
+        }, w -> String.format("%s　|　射弹数：%d", battleStatus(w), w.projectiles.size())));
+
+        // 场景 7：多单位协同包围
+        list.add(new Scenario("战术场景：多单位协同包围", () -> {
+            World w = new World(Fixtures.landMap(35, 35));
+            for (int i = 0; i < 8; i++) {
+                double angle = i * Math.PI / 4;
+                int cx = 17 + (int)(8 * Math.cos(angle));
+                int cy = 17 + (int)(8 * Math.sin(angle));
+                Unit u = Fixtures.unitAtCell(w.map, Fixtures.landTank(), Faction.PLAYER, cx, cy);
+                u.role = (i == 0) ? UnitRole.SCOUT : UnitRole.STRIKE;
+                w.addUnit(u);
+            }
+            w.addUnit(Fixtures.unitAtCell(w.map, Fixtures.landTank(), Faction.ENEMY, 17, 17));
+            w.addUnit(Fixtures.unitAtCell(w.map, Fixtures.landTank(), Faction.ENEMY, 18, 17));
+            w.startBattle();
+            return w;
+        }, ScenarioViewer::battleStatus));
+
+        // 场景 8：非对称兵力对抗
+        list.add(new Scenario("战术场景：3 v 10 非对称战", () -> {
+            World w = new World(Fixtures.landMap(40, 25));
+            for (int i = 0; i < 3; i++) {
+                Unit u = Fixtures.unitAtCell(w.map, Fixtures.landTank(), Faction.PLAYER, 5, 10 + i * 2);
+                u.role = UnitRole.SCOUT;
+                w.addUnit(u);
+            }
+            for (int i = 0; i < 10; i++) {
+                w.addUnit(Fixtures.unitAtCell(w.map, Fixtures.landTank(), Faction.ENEMY, 35, 8 + i));
+            }
+            w.startBattle();
+            return w;
+        }, ScenarioViewer::battleStatus));
+
+        // 场景 9：残骸生成验证
+        list.add(new Scenario("渲染测试：单位阵亡残骸生成", () -> {
+            World w = new World(Fixtures.landMap(25, 25));
+            for (int i = 0; i < 6; i++) {
+                Unit u = Fixtures.unitAtCell(w.map, Fixtures.landTank(), Faction.PLAYER, 8, 10 + i);
+                w.addUnit(u);
+                if (i < 3) u.hp = 0;
+            }
+            for (int i = 0; i < 6; i++) {
+                Unit u = Fixtures.unitAtCell(w.map, Fixtures.landTank(), Faction.ENEMY, 17, 10 + i);
+                w.addUnit(u);
+                if (i < 2) u.hp = 0;
+            }
+            w.startBattle();
+            w.tick();
+            return w;
+        }, w -> String.format("%s　|　残骸：%d", battleStatus(w), w.wreckages.size())));
+
+        // 场景 10：大规模寻路压力测试
+        list.add(new Scenario("性能测试：15 v 15 大规模寻路", () -> {
+            World w = new World(Fixtures.landMap(50, 50));
+            for (int i = 0; i < 15; i++) {
+                Unit u = Fixtures.unitAtCell(w.map, Fixtures.landTank(), Faction.PLAYER, 5, 10 + i * 2);
+                u.role = (i % 3 == 0) ? UnitRole.SCOUT : UnitRole.STRIKE;
+                w.addUnit(u);
+            }
+            for (int i = 0; i < 15; i++) {
+                w.addUnit(Fixtures.unitAtCell(w.map, Fixtures.landTank(), Faction.ENEMY, 45, 10 + i * 2));
+            }
+            w.startBattle();
+            return w;
+        }, ScenarioViewer::battleStatus));
+
+        // 场景 11：真实关卡 level_01（真实地图/贴图，对应 DataDrivenLoadIT 的数据），仅在能定位到 data/ 时加入
         Path data = Fixtures.dataRoot();
         if (data != null) {
             list.add(new Scenario("真实关卡 level_01 推演（真实地图与贴图）",

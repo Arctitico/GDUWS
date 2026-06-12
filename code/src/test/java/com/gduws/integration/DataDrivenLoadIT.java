@@ -39,13 +39,13 @@ class DataDrivenLoadIT {
                         int sight, int range, int dmg, int cooldown) { }
 
     private static final Spec[] UNIT_SPECS = {
-        new Spec("light_tank",  MovementType.LAND,       210, 11, 1.1,  120, 130, 25, 75),
-        new Spec("heavy_tank",  MovementType.LAND,       420, 14, 0.85, 120, 150, 35, 80),
-        new Spec("interceptor", MovementType.AIR,        160, 10, 4.0,  130, 110, 20, 35),
+        new Spec("light_tank",  MovementType.LAND,       210, 11, 1.1,  260, 130, 25, 75),
+        new Spec("heavy_tank",  MovementType.LAND,       420, 14, 0.85, 300, 150, 35, 80),
+        new Spec("interceptor", MovementType.AIR,        160, 10, 4.0,  300, 110, 20, 35),
         new Spec("bomber",      MovementType.AIR,        200, 12, 3.2,  80,  40,  40, 90),
-        new Spec("battleship",  MovementType.WATER,      520, 18, 0.7,  140, 180, 45, 110),
-        new Spec("destroyer",   MovementType.WATER,      320, 15, 0.9,  130, 140, 18, 40),
-        new Spec("submarine",   MovementType.UNDERWATER, 240, 13, 0.8,  100, 120, 50, 100),
+        new Spec("battleship",  MovementType.WATER,      520, 18, 0.7,  360, 180, 45, 110),
+        new Spec("destroyer",   MovementType.WATER,      320, 15, 0.9,  280, 140, 18, 40),
+        new Spec("submarine",   MovementType.UNDERWATER, 240, 13, 0.8,  160, 120, 50, 100),
     };
 
     private Path root;

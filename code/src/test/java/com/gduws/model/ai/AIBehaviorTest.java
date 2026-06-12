@@ -28,19 +28,19 @@ import com.gduws.testkit.Fixtures;
 class AIBehaviorTest {
 
     @Test
-    @DisplayName("BR-03-6：打击单位连续 IDLE 满 240 tick 后自动转为侦察")
+    @DisplayName("BR-03-6：打击单位连续 IDLE 满 90 tick 后自动转为侦察")
     void idleStrikeConvertsToScoutAfter240Ticks() {
         World w = new World(Fixtures.landMap(30, 30));
         Unit u = Fixtures.unitAtCell(w.map, Fixtures.landTank(), Faction.PLAYER, 15, 15);
         w.addUnit(u); // 无敌人 → 一直 IDLE
 
-        for (int i = 0; i < 239; i++) {
+        for (int i = 0; i < 89; i++) {
             w.tick();
         }
-        assertEquals(UnitRole.STRIKE, u.role, "第 239 tick 仍应为打击");
+        assertEquals(UnitRole.STRIKE, u.role, "第 89 tick 仍应为打击");
 
-        w.tick(); // 第 240 tick
-        assertEquals(UnitRole.SCOUT, u.role, "满 240 tick 转为侦察");
+        w.tick(); // 第 90 tick
+        assertEquals(UnitRole.SCOUT, u.role, "满 90 tick 转为侦察");
         assertEquals(UnitState.SCOUTING, u.state);
         assertTrue(u.autoScoutFromStrike, "标记为'由打击自动转侦察'");
     }

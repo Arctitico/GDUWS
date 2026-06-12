@@ -30,15 +30,15 @@ public class World {
     private int tick = 0;
 
     // 胜负判定
-    /** 敌我双方长时间都无兵力损失（僵持）超过该 tick 数则提前判定结束（30 tick/s，约 30 秒） */
-    private static final int STALEMATE_TIMEOUT = 900;
-    /** 情报记忆时长：敌人超过该 tick 数未被任一友方单位再次目击，则从情报板移除*/
+    /** 敌我双方长时间都无兵力损失（僵持）超过该 tick 数则提前判定结束（30 tick/s，约 50 秒） */
+    private static final int STALEMATE_TIMEOUT = 2500;
+    /** 情报记忆时长：敌人超过该 tick 数未被任一友方单位再次目击，则从情报板移除 */
     private static final int INTEL_MEMORY_TIMEOUT = 300;
     private final Map<Faction, Integer> initialCount = new EnumMap<>(Faction.class);
     private Faction winner;
     private boolean battleStarted;
-    private int totalAlive;       // 上一帧双方存活总数，用于检测兵力损失
-    private int lastLossTick;     // 最近一次出现兵力损失的 tick
+    private int totalAlive; // 上一帧双方存活总数，用于检测兵力损失
+    private int lastLossTick; // 最近一次出现兵力损失的 tick
 
     public World(GameMap map) {
         this.map = map;
@@ -152,7 +152,8 @@ public class World {
 
     /** 推进一逻辑帧：视野 → AI → 移动 → 战斗 → 射弹 → 清理 → 胜负 */
     public void tick() {
-        if (winner != null) return;
+        if (winner != null)
+            return;
         tick++;
         visionSystem.update(this);
         // 视野更新后剔除过期敌情：脱离己方视野（迷雾中）超时的敌人不再可被索敌
@@ -165,7 +166,8 @@ public class World {
         combatSystem.update(this);
         projectileSystem.update(this);
         removeDead();
-        if (battleStarted) checkVictory();
+        if (battleStarted)
+            checkVictory();
     }
 
     private void removeDead() {
@@ -179,9 +181,11 @@ public class World {
                     String deadPath = u.def.spritePath.replace(".png", "_dead.png");
                     wreckages.add(new Wreckage(u.x, u.y, u.facing, deadPath));
                 }
-                for (IntelBoard b : intel.values()) b.forget(u);
+                for (IntelBoard b : intel.values())
+                    b.forget(u);
                 for (Unit other : units) {
-                    if (other.currentTarget == u) other.currentTarget = null;
+                    if (other.currentTarget == u)
+                        other.currentTarget = null;
                 }
                 it.remove();
             }
@@ -199,10 +203,11 @@ public class World {
         Faction loser = null;
         for (Faction f : Faction.values()) {
             int init = initialCountOf(f);
-            if (init <= 0) continue;
+            if (init <= 0)
+                continue;
             int alive = countAlive(f);
             double lossRatio = 1.0 - (double) alive / init;
-            if (lossRatio >= 0.9) {
+            if (lossRatio > 0.9) {
                 loser = f;
                 break;
             }
@@ -213,7 +218,10 @@ public class World {
         }
         if (loser != null) {
             for (Faction f : Faction.values()) {
-                if (f != loser) { winner = f; break; }
+                if (f != loser) {
+                    winner = f;
+                    break;
+                }
             }
             // 失败方剩余单位停止行动
             for (Unit u : units) {
@@ -232,7 +240,8 @@ public class World {
 
     private double lossRatioOf(Faction f) {
         int init = initialCountOf(f);
-        if (init <= 0) return 0.0;
+        if (init <= 0)
+            return 0.0;
         return 1.0 - (double) countAlive(f) / init;
     }
 
@@ -241,7 +250,8 @@ public class World {
     /** 把每个友方单位所在区域标记为"刚刚访问过" */
     private void markFriendlyRegions() {
         for (Unit u : units) {
-            if (u.isDead()) continue;
+            if (u.isDead())
+                continue;
             exploration.markVisited(u.faction, u.x, u.y, tick);
         }
     }
@@ -253,7 +263,8 @@ public class World {
         for (Unit u : units) {
             double dx = u.x - px;
             double dy = u.y - py;
-            if (dx * dx + dy * dy <= r2) result.add(u);
+            if (dx * dx + dy * dy <= r2)
+                result.add(u);
         }
         return Collections.unmodifiableList(result);
     }
