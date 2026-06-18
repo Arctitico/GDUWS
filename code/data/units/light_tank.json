@@ -2,6 +2,7 @@
   "id": "light_tank",
   "displayName": "轻型坦克",
   "maxHp": 210,
+  "cost": 100,
   "radius": 11,
   "movementType": "LAND",
   "moveSpeed": 1.1,

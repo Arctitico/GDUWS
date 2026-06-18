@@ -16,11 +16,19 @@ public class DeployController {
 
     private final World world;
     private final UnitDefLoader unitDefs;
+    /**
+     * 各兵种剩余可部署数量。计数制下为真正的数量上限并随放置/移除增减；
+     * 资金制下不作约束，仅其 key 集合用作"本关可用兵种名册"，数量不消耗。
+     */
     private final Map<String, Integer> remaining = new LinkedHashMap<>();
     private String selectedUnitId;
     private String lastMessage = "";
     /** 新放置单位的任务角色（侦察 / 打击） */
     private UnitRole deployRole = UnitRole.STRIKE;
+
+    /** 资金制：本关总资金（&gt;0 启用资金制），以及当前剩余资金。计数制时二者均为 0、不参与校验。 */
+    private int totalFunds;
+    private int remainingFunds;
 
     public DeployController(World world, UnitDefLoader unitDefs, LevelDef level) {
         this.world = world;
@@ -32,12 +40,34 @@ public class DeployController {
     public void reset(LevelDef level) {
         remaining.clear();
         remaining.putAll(level.playerBudget);
+        totalFunds = Math.max(0, level.playerFunds);
+        remainingFunds = totalFunds;
         selectedUnitId = remaining.isEmpty() ? null : remaining.keySet().iterator().next();
         lastMessage = "";
     }
 
     public Map<String, Integer> remaining() {
         return remaining;
+    }
+
+    /** 是否启用资金制（本关给定了正的总资金）。 */
+    public boolean fundsMode() {
+        return totalFunds > 0;
+    }
+
+    /** 本关总资金（资金制）。 */
+    public int totalFunds() {
+        return totalFunds;
+    }
+
+    /** 当前剩余资金（资金制）。 */
+    public int remainingFunds() {
+        return remainingFunds;
+    }
+
+    /** 指定兵种的部署价格。 */
+    public int costOf(String unitId) {
+        return unitDefs.get(unitId).cost;
     }
 
     public String selectedUnitId() {
@@ -85,11 +115,17 @@ public class DeployController {
             lastMessage = "请先选择单位类型";
             return false;
         }
-        if (remaining.getOrDefault(selectedUnitId, 0) <= 0) {
+        boolean funds = fundsMode();
+        // 计数制：受数量上限约束；资金制：不限数量，仅受资金约束
+        if (!funds && remaining.getOrDefault(selectedUnitId, 0) <= 0) {
             lastMessage = "该单位数量已用尽";
             return false;
         }
         UnitDef def = unitDefs.get(selectedUnitId);
+        if (funds && def.cost > remainingFunds) {
+            lastMessage = "资金不足（需 " + def.cost + "，剩 " + remainingFunds + "）";
+            return false;
+        }
         int col = world.map.toCol(px);
         int row = world.map.toRow(py);
         if (!world.map.isPassable(col, row, def.movementType)) {
@@ -109,8 +145,13 @@ public class DeployController {
         Unit u = new Unit(def, Faction.PLAYER, cx, cy);
         u.role = deployRole;
         world.addUnit(u);
-        remaining.put(selectedUnitId, remaining.get(selectedUnitId) - 1);
-        lastMessage = "已放置 " + def.displayName + "（" + roleName(deployRole) + "）";
+        if (funds) {
+            remainingFunds -= def.cost;
+        } else {
+            remaining.put(selectedUnitId, remaining.get(selectedUnitId) - 1);
+        }
+        lastMessage = "已放置 " + def.displayName + "（" + roleName(deployRole) + "）"
+            + (funds ? "，剩余资金 " + remainingFunds : "");
         return true;
     }
 
@@ -121,8 +162,13 @@ public class DeployController {
             return false;
         }
         world.removeUnit(u);
-        remaining.merge(u.def.id, 1, Integer::sum);
-        lastMessage = "已移除 " + u.def.displayName;
+        if (fundsMode()) {
+            remainingFunds = Math.min(totalFunds, remainingFunds + u.def.cost);
+        } else {
+            remaining.merge(u.def.id, 1, Integer::sum);
+        }
+        lastMessage = "已移除 " + u.def.displayName
+            + (fundsMode() ? "，返还资金 " + u.def.cost : "");
         return true;
     }
 

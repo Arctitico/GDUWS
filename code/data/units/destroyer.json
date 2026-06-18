@@ -2,6 +2,7 @@
   "id": "destroyer",
   "displayName": "驱逐舰",
   "maxHp": 320,
+  "cost": 160,
   "radius": 15,
   "movementType": "WATER",
   "moveSpeed": 0.9,

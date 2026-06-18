@@ -8,6 +8,7 @@ public class UnitDef {
     public String       id;          // 唯一标识，如 "light_tank"
     public String       displayName; // 显示名
     public int          maxHp;
+    public int          cost;         // 部署价格（资金制关卡用，FR-02 扩展）；未指定时为 0
     public double       radius;       // 碰撞/选择半径
     public MovementType movementType;
     public double       moveSpeed;    // 每 tick 位移

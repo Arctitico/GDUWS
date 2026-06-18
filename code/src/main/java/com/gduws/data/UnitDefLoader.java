@@ -47,6 +47,7 @@ public class UnitDefLoader {
         def.id = str(root, "id");
         def.displayName = str(root, "displayName");
         def.maxHp = intVal(root, "maxHp");
+        def.cost = (int) Math.round(dbl(root, "cost", 0));
         def.radius = dbl(root, "radius", 8.0);
         def.movementType = MovementType.valueOf(str(root, "movementType"));
         def.moveSpeed = dbl(root, "moveSpeed", 1.0);

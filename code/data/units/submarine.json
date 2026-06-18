@@ -2,6 +2,7 @@
   "id": "submarine",
   "displayName": "潜艇",
   "maxHp": 240,
+  "cost": 220,
   "radius": 13,
   "movementType": "UNDERWATER",
   "moveSpeed": 0.8,

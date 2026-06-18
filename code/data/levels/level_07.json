@@ -2,12 +2,13 @@
   "id": "level_07",
   "name": "地图测试",
   "map": "data/maps/level_07.map",
+  "playerFunds": 1400,
   "playerBudget": {
-    "light_tank": 5,
-    "heavy_tank": 2,
-    "interceptor": 2,
+    "light_tank": 1,
+    "heavy_tank": 1,
+    "interceptor": 1,
     "bomber": 1,
-    "destroyer": 2,
+    "destroyer": 1,
     "submarine": 1
   },
   "enemyUnits": [

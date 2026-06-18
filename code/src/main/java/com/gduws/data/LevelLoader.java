@@ -23,6 +23,11 @@ public class LevelLoader {
         level.name = (String) root.get("name");
         level.mapPath = (String) root.get("map");
 
+        Object funds = root.get("playerFunds");
+        if (funds instanceof Number) {
+            level.playerFunds = (int) Math.round(((Number) funds).doubleValue());
+        }
+
         Map<String, Object> budget = (Map<String, Object>) root.get("playerBudget");
         if (budget != null) {
             for (Map.Entry<String, Object> e : budget.entrySet()) {

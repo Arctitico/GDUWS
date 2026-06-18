@@ -2,6 +2,7 @@
   "id": "heavy_tank",
   "displayName": "重型坦克",
   "maxHp": 420,
+  "cost": 200,
   "radius": 14,
   "movementType": "LAND",
   "moveSpeed": 0.85,

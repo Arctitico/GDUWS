@@ -2,6 +2,7 @@
   "id": "interceptor",
   "displayName": "拦截机",
   "maxHp": 160,
+  "cost": 120,
   "radius": 10,
   "movementType": "AIR",
   "moveSpeed": 4.0,

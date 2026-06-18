@@ -2,6 +2,7 @@
   "id": "level_01",
   "name": "草地",
   "map": "data/maps/level_01.map",
+  "playerFunds": 1200,
   "playerBudget": {
     "light_tank": 10,
     "interceptor": 1

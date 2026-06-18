@@ -2,6 +2,7 @@
   "id": "battleship",
   "displayName": "战列舰",
   "maxHp": 520,
+  "cost": 320,
   "radius": 18,
   "movementType": "WATER",
   "moveSpeed": 0.7,

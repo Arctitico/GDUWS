@@ -2,6 +2,7 @@
   "id": "bomber",
   "displayName": "攻击机",
   "maxHp": 200,
+  "cost": 180,
   "radius": 12,
   "movementType": "AIR",
   "moveSpeed": 3.2,
