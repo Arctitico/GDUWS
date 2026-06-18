@@ -83,6 +83,7 @@ public class GameFrame extends JFrame {
     private final Map<String, JToggleButton> unitButtons = new LinkedHashMap<>();
     private final JLabel statusLabel = new JLabel();
     private final JLabel counterLabel = new JLabel();
+    private final JLabel fundsLabel = new JLabel();
     private JButton startButton;
 
     private final JPanel sidebarCards = new JPanel(new CardLayout());
@@ -451,26 +452,9 @@ public class GameFrame extends JFrame {
             
             JLabel iconLabel = new JLabel();
             iconLabel.setPreferredSize(new Dimension(40, 40));
-            if (def != null && def.spritePath != null) {
-                try {
-                    BufferedImage unitImg = ImageIO.read(new File(def.spritePath));
-                    if (unitImg != null) {
-                        int imgSize = Math.max(unitImg.getWidth(), unitImg.getHeight());
-                        BufferedImage scaled = new BufferedImage(40, 40, BufferedImage.TYPE_INT_ARGB);
-                        Graphics2D g2d = scaled.createGraphics();
-                        g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
-                        double scale = 40.0 / imgSize;
-                        int w = (int) (unitImg.getWidth() * scale);
-                        int h = (int) (unitImg.getHeight() * scale);
-                        int x = (40 - w) / 2;
-                        int y = (40 - h) / 2;
-                        g2d.drawImage(unitImg, x, y, w, h, null);
-                        g2d.dispose();
-                        iconLabel.setIcon(new ImageIcon(scaled));
-                    }
-                } catch (Exception ex) {
-                    // 忽略加载失败
-                }
+            ImageIcon icon = buildUnitIcon(def, 40);
+            if (icon != null) {
+                iconLabel.setIcon(icon);
             }
             unitPanel.add(iconLabel);
             unitPanel.add(Box.createHorizontalStrut(8));
@@ -505,6 +489,13 @@ public class GameFrame extends JFrame {
         roleWrap.add(scoutBtn);
         deployCard.add(roleWrap);
 
+        deployCard.add(Box.createVerticalStrut(12));
+        JButton infoBtn = new JButton("兵种简介");
+        infoBtn.setAlignmentX(LEFT_ALIGNMENT);
+        infoBtn.setMaximumSize(new Dimension(240, 32));
+        infoBtn.addActionListener(e -> showUnitInfoDialog());
+        deployCard.add(infoBtn);
+
         deployCard.add(Box.createVerticalStrut(16));
         startButton = new JButton("开始战斗");
         startButton.setAlignmentX(LEFT_ALIGNMENT);
@@ -513,6 +504,12 @@ public class GameFrame extends JFrame {
         deployCard.add(startButton);
 
         deployCard.add(Box.createVerticalStrut(10));
+        fundsLabel.setHorizontalAlignment(SwingConstants.LEFT);
+        JPanel fWrap = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        fWrap.add(fundsLabel);
+        deployCard.add(fWrap);
+
+        deployCard.add(Box.createVerticalStrut(4));
         counterLabel.setHorizontalAlignment(SwingConstants.LEFT);
         JPanel cWrap = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         cWrap.add(counterLabel);
@@ -603,15 +600,32 @@ public class GameFrame extends JFrame {
 
     private void refreshSidebar() {
         String selected = deploy.selectedUnitId();
+        boolean funds = deploy.fundsMode();
+        boolean inDeploy = stateManager.is(GameState.DEPLOY);
         for (Map.Entry<String, JToggleButton> e : unitButtons.entrySet()) {
             String unitId = e.getKey();
             UnitDef def = deploy.defOf(unitId);
-            int left = deploy.remaining().getOrDefault(unitId, 0);
-            e.getValue().setText(def.displayName + "  ×" + left);
-            e.getValue().setEnabled(stateManager.is(GameState.DEPLOY));
-            if (unitId.equals(selected)) {
-                e.getValue().setSelected(true);
+            JToggleButton btn = e.getValue();
+            if (funds) {
+                // 资金制：不限数量，只显示价格；买不起则置灰
+                btn.setText(def.displayName + "  ¥" + def.cost);
+                btn.setEnabled(inDeploy && def.cost <= deploy.remainingFunds());
+            } else {
+                // 计数制：显示剩余数量
+                int left = deploy.remaining().getOrDefault(unitId, 0);
+                btn.setText(def.displayName + "  ×" + left);
+                btn.setEnabled(inDeploy);
             }
+            if (unitId.equals(selected)) {
+                btn.setSelected(true);
+            }
+        }
+        if (funds) {
+            fundsLabel.setText("<html>资金：<b>" + deploy.remainingFunds() + "</b> / "
+                + deploy.totalFunds() + "</html>");
+            fundsLabel.setVisible(true);
+        } else {
+            fundsLabel.setVisible(false);
         }
         int pAlive = world.countAlive(Faction.PLAYER);
         int eAlive = world.countAlive(Faction.ENEMY);
@@ -659,14 +673,130 @@ public class GameFrame extends JFrame {
         int p = world.countAlive(Faction.PLAYER);
         int en = world.countAlive(Faction.ENEMY);
         boolean playerWin = winner == Faction.PLAYER;
-        resultTitle.setText(playerWin ? "胜利！" : "失败…");
+        resultTitle.setText(resultTitleText(playerWin, world.victoryReason()));
         resultTitle.setForeground(playerWin ? new Color(40, 130, 40) : new Color(180, 40, 40));
-        resultStats.setText("<html>己方剩余：" + p + " / " + world.initialCountOf(Faction.PLAYER)
+        resultStats.setText("<html>" + resultReasonText(playerWin, world.victoryReason())
+            + "<br><br>己方剩余：" + p + " / " + world.initialCountOf(Faction.PLAYER)
             + "<br>敌方剩余：" + en + " / " + world.initialCountOf(Faction.ENEMY) + "</html>");
         gamePanel.renderer().fogMode = FogRenderer.Mode.NONE;
         music.setScene(MusicPlayer.Scene.MENU);
         showCard(CARD_RESULT);
         gamePanel.repaint();
+    }
+
+    /**
+     * 生成布兵侧栏的兵种缩略图：底座 + 炮塔合成（与战场渲染一致——炮塔居中叠在底座之上），
+     * 二者按同一比例缩放并居中填入 {@code size×size}。无底座贴图或加载失败时返回 null。
+     */
+    private ImageIcon buildUnitIcon(UnitDef def, int size) {
+        if (def == null || def.spritePath == null) {
+            return null;
+        }
+        try {
+            File baseFile = new File(def.spritePath);
+            if (!baseFile.exists()) {
+                return null;
+            }
+            BufferedImage base = ImageIO.read(baseFile);
+            if (base == null) {
+                return null;
+            }
+            BufferedImage turret = null;
+            if (def.turretSpritePath != null) {
+                File turretFile = new File(def.turretSpritePath);
+                if (turretFile.exists()) {
+                    turret = ImageIO.read(turretFile);
+                }
+            }
+            // 以底座与炮塔的最大边长为基准统一缩放，确保整体贴图（含外伸的炮管）不超出图标
+            int maxDim = Math.max(base.getWidth(), base.getHeight());
+            if (turret != null) {
+                maxDim = Math.max(maxDim, Math.max(turret.getWidth(), turret.getHeight()));
+            }
+            double scale = (double) size / maxDim;
+
+            BufferedImage icon = new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB);
+            Graphics2D g2d = icon.createGraphics();
+            g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+            drawCentered(g2d, base, size, scale);
+            if (turret != null) {
+                drawCentered(g2d, turret, size, scale);
+            }
+            g2d.dispose();
+            return new ImageIcon(icon);
+        } catch (Exception ex) {
+            return null; // 加载失败时不显示图标，不影响布兵
+        }
+    }
+
+    /** 把 img 按 scale 缩放后居中绘制到 size×size 画布上 */
+    private static void drawCentered(Graphics2D g2d, BufferedImage img, int size, double scale) {
+        int w = (int) Math.round(img.getWidth() * scale);
+        int h = (int) Math.round(img.getHeight() * scale);
+        int x = (size - w) / 2;
+        int y = (size - h) / 2;
+        g2d.drawImage(img, x, y, w, h, null);
+    }
+
+    /** 兵种简介弹窗（FR-02 扩展）：列出本关可用兵种的关键属性，供布兵前查阅 */
+    private void showUnitInfoDialog() {
+        JPanel list = new JPanel();
+        list.setLayout(new BoxLayout(list, BoxLayout.Y_AXIS));
+        list.setBorder(BorderFactory.createEmptyBorder(12, 14, 12, 14));
+        boolean funds = deploy.fundsMode();
+        for (String unitId : level.playerBudget.keySet()) {
+            UnitDef def = deploy.defOf(unitId);
+            JLabel card = new JLabel(UnitInfoText.describeHtml(def, funds));
+            card.setAlignmentX(LEFT_ALIGNMENT);
+            card.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(210, 210, 210)),
+                BorderFactory.createEmptyBorder(6, 0, 8, 0)));
+            list.add(card);
+        }
+        javax.swing.JScrollPane scroll = new javax.swing.JScrollPane(list);
+        scroll.setPreferredSize(new Dimension(360, 420));
+        scroll.getVerticalScrollBar().setUnitIncrement(16);
+        javax.swing.JDialog dialog = new javax.swing.JDialog(this, "兵种简介", true);
+        dialog.getContentPane().add(scroll);
+        dialog.pack();
+        dialog.setLocationRelativeTo(this);
+        dialog.setVisible(true);
+    }
+
+    /** 依据胜负与结算原因给出更贴切的标题（FR-04） */
+    private static String resultTitleText(boolean playerWin, com.gduws.model.VictoryReason reason) {
+        if (reason == null) {
+            return playerWin ? "胜利！" : "失败…";
+        }
+        switch (reason) {
+            case ANNIHILATION:
+                return playerWin ? "全面胜利！" : "全军覆没…";
+            case ATTRITION:
+                return playerWin ? "胜利！" : "失败…";
+            case STALEMATE:
+                return playerWin ? "战略胜利" : "战略失利";
+            default:
+                return playerWin ? "胜利！" : "失败…";
+        }
+    }
+
+    /** 结算原因的一句话说明 */
+    private static String resultReasonText(boolean playerWin, com.gduws.model.VictoryReason reason) {
+        if (reason == null) {
+            return playerWin ? "我方取得胜利。" : "我方落败。";
+        }
+        switch (reason) {
+            case ANNIHILATION:
+                return playerWin ? "敌方单位已被全部歼灭。" : "我方单位已被全部歼灭。";
+            case ATTRITION:
+                return playerWin ? "敌方损失超过 90%，已丧失战斗力。" : "我方损失超过 90%，已丧失战斗力。";
+            case STALEMATE:
+                return playerWin
+                    ? "战场陷入僵持，按双方战损率判定——我方战损更低。"
+                    : "战场陷入僵持，按双方战损率判定——我方战损更高。";
+            default:
+                return "";
+        }
     }
 
     private static String safe(String s) {

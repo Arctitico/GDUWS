@@ -36,6 +36,7 @@ public class World {
     private static final int INTEL_MEMORY_TIMEOUT = 300;
     private final Map<Faction, Integer> initialCount = new EnumMap<>(Faction.class);
     private Faction winner;
+    private VictoryReason victoryReason;
     private boolean battleStarted;
     private int totalAlive; // 上一帧双方存活总数，用于检测兵力损失
     private int lastLossTick; // 最近一次出现兵力损失的 tick
@@ -112,6 +113,11 @@ public class World {
         return winner;
     }
 
+    /** 本局结算原因（全歼 / 损失超 90% / 僵持超时）；未分出胜负前为 null。 */
+    public VictoryReason victoryReason() {
+        return victoryReason;
+    }
+
     public int initialCountOf(Faction f) {
         Integer v = initialCount.get(f);
         return v == null ? 0 : v;
@@ -127,6 +133,7 @@ public class World {
             u.lastActiveTick = tick;
         }
         winner = null;
+        victoryReason = null;
         battleStarted = true;
         totalAlive = countAlive(Faction.PLAYER) + countAlive(Faction.ENEMY);
         lastLossTick = tick;
@@ -144,6 +151,7 @@ public class World {
         combatSystem.recentShots.clear();
         initialCount.clear();
         winner = null;
+        victoryReason = null;
         battleStarted = false;
         totalAlive = 0;
         lastLossTick = 0;
@@ -201,6 +209,7 @@ public class World {
         totalAlive = nowAlive;
 
         Faction loser = null;
+        VictoryReason reason = null;
         for (Faction f : Faction.values()) {
             int init = initialCountOf(f);
             if (init <= 0)
@@ -209,14 +218,18 @@ public class World {
             double lossRatio = 1.0 - (double) alive / init;
             if (lossRatio > 0.9) {
                 loser = f;
+                // 全部被歼灭 vs. 仍有零星残存，区分结算文案
+                reason = (alive <= 0) ? VictoryReason.ANNIHILATION : VictoryReason.ATTRITION;
                 break;
             }
         }
         // 僵持超时：双方长时间无兵力损失，按损失率提前判定
         if (loser == null && tick - lastLossTick >= STALEMATE_TIMEOUT) {
             loser = higherLossFaction();
+            reason = VictoryReason.STALEMATE;
         }
         if (loser != null) {
+            victoryReason = reason;
             for (Faction f : Faction.values()) {
                 if (f != loser) {
                     winner = f;
