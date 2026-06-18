@@ -77,19 +77,18 @@ class DataDrivenLoadIT {
     }
 
     @Test
-    @DisplayName("[特征化] 攻击域数据与 §5.1.2 矩阵的一处差异：战列舰/驱逐舰数据可打陆地")
-    void attackDomainsCharacterizeDataVsSpec() {
-        // 与规格 §5.1.2 一致的样本
+    @DisplayName("§7.3：攻击域数据与攻击域克制矩阵一致")
+    void attackDomainsMatchSpec() {
+        // 拦截机只能对空、潜艇可打水下
         assertTrue(units.get("interceptor").attack.canAttackAir);
         assertFalse(units.get("interceptor").attack.canAttackLand);
         assertTrue(units.get("submarine").attack.canAttackUnderwater);
 
-        // 偏差记录：规格 §5.1.2 矩阵中战列舰、驱逐舰"陆地"列为 ✗，
-        // 但数据文件 battleship.json / destroyer.json 的 canAttackLand 为 true。
+        // 战列舰、驱逐舰可对地打击（§7.3 矩阵「打地」列为 ✓）
         assertTrue(units.get("battleship").attack.canAttackLand,
-                "数据现状：战列舰可打陆（规格 §5.1.2 为不可）");
+                "战列舰可打陆（§7.3）");
         assertTrue(units.get("destroyer").attack.canAttackLand,
-                "数据现状：驱逐舰可打陆（规格 §5.1.2 为不可）");
+                "驱逐舰可打陆（§7.3）");
     }
 
     @Test
