@@ -1,0 +1,89 @@
+{
+  "id": "level_05",
+  "name": "全域决战",
+  "map": "data/maps/level_05.map",
+  "playerFunds": 2600,
+  "playerBudget": {
+    "light_tank": 99,
+    "heavy_tank": 99,
+    "interceptor": 99,
+    "bomber": 99,
+    "battleship": 99,
+    "destroyer": 99,
+    "submarine": 99
+  },
+  "enemyUnits": [
+    {
+      "unitId": "light_tank",
+      "col": 46,
+      "row": 5,
+      "role": "STRIKE"
+    },
+    {
+      "unitId": "light_tank",
+      "col": 50,
+      "row": 9,
+      "role": "STRIKE"
+    },
+    {
+      "unitId": "light_tank",
+      "col": 54,
+      "row": 13,
+      "role": "STRIKE"
+    },
+    {
+      "unitId": "light_tank",
+      "col": 48,
+      "row": 17,
+      "role": "SCOUT"
+    },
+    {
+      "unitId": "heavy_tank",
+      "col": 52,
+      "row": 7,
+      "role": "STRIKE"
+    },
+    {
+      "unitId": "heavy_tank",
+      "col": 50,
+      "row": 15,
+      "role": "STRIKE"
+    },
+    {
+      "unitId": "interceptor",
+      "col": 44,
+      "row": 10,
+      "role": "STRIKE"
+    },
+    {
+      "unitId": "interceptor",
+      "col": 38,
+      "row": 19,
+      "role": "SCOUT"
+    },
+    {
+      "unitId": "bomber",
+      "col": 48,
+      "row": 12,
+      "role": "STRIKE"
+    },
+    {
+      "unitId": "battleship",
+      "col": 52,
+      "row": 33,
+      "role": "STRIKE"
+    },
+    {
+      "unitId": "destroyer",
+      "col": 48,
+      "row": 38,
+      "role": "STRIKE"
+    },
+    {
+      "unitId": "submarine",
+      "col": 54,
+      "row": 36,
+      "role": "SCOUT"
+    }
+  ]
+}

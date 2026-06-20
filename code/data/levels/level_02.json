@@ -1,0 +1,84 @@
+{
+  "id": "level_02",
+  "name": "空中突袭",
+  "map": "data/maps/level_02.map",
+  "playerFunds": 1800,
+  "playerBudget": {
+    "bomber": 99,
+    "interceptor": 99
+  },
+  "enemyUnits": [
+    {
+      "unitId": "light_tank",
+      "col": 42,
+      "row": 6,
+      "role": "STRIKE"
+    },
+    {
+      "unitId": "light_tank",
+      "col": 46,
+      "row": 10,
+      "role": "STRIKE"
+    },
+    {
+      "unitId": "light_tank",
+      "col": 50,
+      "row": 14,
+      "role": "STRIKE"
+    },
+    {
+      "unitId": "light_tank",
+      "col": 44,
+      "row": 24,
+      "role": "STRIKE"
+    },
+    {
+      "unitId": "light_tank",
+      "col": 48,
+      "row": 28,
+      "role": "STRIKE"
+    },
+    {
+      "unitId": "light_tank",
+      "col": 52,
+      "row": 32,
+      "role": "STRIKE"
+    },
+    {
+      "unitId": "light_tank",
+      "col": 45,
+      "row": 35,
+      "role": "SCOUT"
+    },
+    {
+      "unitId": "heavy_tank",
+      "col": 49,
+      "row": 8,
+      "role": "STRIKE"
+    },
+    {
+      "unitId": "heavy_tank",
+      "col": 50,
+      "row": 30,
+      "role": "STRIKE"
+    },
+    {
+      "unitId": "interceptor",
+      "col": 36,
+      "row": 12,
+      "role": "STRIKE"
+    },
+    {
+      "unitId": "interceptor",
+      "col": 38,
+      "row": 26,
+      "role": "STRIKE"
+    },
+    {
+      "unitId": "interceptor",
+      "col": 30,
+      "row": 19,
+      "role": "SCOUT"
+    }
+  ]
+}

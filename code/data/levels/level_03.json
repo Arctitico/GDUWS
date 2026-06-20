@@ -1,0 +1,86 @@
+{
+  "id": "level_03",
+  "name": "抢滩登陆",
+  "map": "data/maps/level_03.map",
+  "playerFunds": 2200,
+  "playerBudget": {
+    "battleship": 99,
+    "destroyer": 99,
+    "heavy_tank": 99,
+    "light_tank": 99
+  },
+  "enemyUnits": [
+    {
+      "unitId": "light_tank",
+      "col": 24,
+      "row": 16,
+      "role": "SCOUT"
+    },
+    {
+      "unitId": "light_tank",
+      "col": 28,
+      "row": 6,
+      "role": "STRIKE"
+    },
+    {
+      "unitId": "light_tank",
+      "col": 27,
+      "row": 33,
+      "role": "STRIKE"
+    },
+    {
+      "unitId": "light_tank",
+      "col": 34,
+      "row": 18,
+      "role": "STRIKE"
+    },
+    {
+      "unitId": "light_tank",
+      "col": 44,
+      "row": 12,
+      "role": "STRIKE"
+    },
+    {
+      "unitId": "light_tank",
+      "col": 46,
+      "row": 30,
+      "role": "STRIKE"
+    },
+    {
+      "unitId": "light_tank",
+      "col": 50,
+      "row": 20,
+      "role": "STRIKE"
+    },
+    {
+      "unitId": "heavy_tank",
+      "col": 36,
+      "row": 9,
+      "role": "STRIKE"
+    },
+    {
+      "unitId": "heavy_tank",
+      "col": 35,
+      "row": 30,
+      "role": "STRIKE"
+    },
+    {
+      "unitId": "heavy_tank",
+      "col": 48,
+      "row": 19,
+      "role": "STRIKE"
+    },
+    {
+      "unitId": "interceptor",
+      "col": 26,
+      "row": 20,
+      "role": "STRIKE"
+    },
+    {
+      "unitId": "interceptor",
+      "col": 30,
+      "row": 24,
+      "role": "SCOUT"
+    }
+  ]
+}

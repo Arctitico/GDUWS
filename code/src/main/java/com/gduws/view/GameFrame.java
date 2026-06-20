@@ -225,26 +225,13 @@ public class GameFrame extends JFrame {
         
         panel.add(Box.createVerticalStrut(60));
         
-        JButton grassTestBtn = createTransparentButton("草地测试", 200, 45);
-        grassTestBtn.addActionListener(e -> showLevelSelect());
-        panel.add(grassTestBtn);
-        
+        JButton startBtn = createTransparentButton("开始游戏", 200, 45);
+        startBtn.addActionListener(e -> showLevelSelect());
+        panel.add(startBtn);
+
         panel.add(Box.createVerticalStrut(15));
-        
-        JButton mapTestBtn = createTransparentButton("地图测试", 200, 45);
-        mapTestBtn.addActionListener(e -> showLevelSelect());
-        panel.add(mapTestBtn);
-        
-        panel.add(Box.createVerticalStrut(15));
-        
-        JButton textureTestBtn = createTransparentButton("纹理测试", 200, 45);
-        textureTestBtn.addActionListener(e -> showLevelSelect());
-        panel.add(textureTestBtn);
-        
-        panel.add(Box.createVerticalStrut(30));
-        
-        JButton exitBtn = createTransparentButton("退出游戏", 150, 35);
-        exitBtn.setFont(new Font("Dialog", Font.PLAIN, 16));
+
+        JButton exitBtn = createTransparentButton("退出游戏", 200, 45);
         exitBtn.addActionListener(e -> System.exit(0));
         panel.add(exitBtn);
         

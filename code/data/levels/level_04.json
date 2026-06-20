@@ -1,0 +1,61 @@
+{
+  "id": "level_04",
+  "name": "深海猎杀",
+  "map": "data/maps/level_04.map",
+  "playerFunds": 2400,
+  "playerBudget": {
+    "destroyer": 99,
+    "battleship": 99,
+    "submarine": 99
+  },
+  "enemyUnits": [
+    {
+      "unitId": "submarine",
+      "col": 32,
+      "row": 7,
+      "role": "SCOUT"
+    },
+    {
+      "unitId": "submarine",
+      "col": 30,
+      "row": 33,
+      "role": "SCOUT"
+    },
+    {
+      "unitId": "submarine",
+      "col": 36,
+      "row": 20,
+      "role": "STRIKE"
+    },
+    {
+      "unitId": "submarine",
+      "col": 42,
+      "row": 26,
+      "role": "STRIKE"
+    },
+    {
+      "unitId": "destroyer",
+      "col": 34,
+      "row": 12,
+      "role": "STRIKE"
+    },
+    {
+      "unitId": "destroyer",
+      "col": 38,
+      "row": 28,
+      "role": "STRIKE"
+    },
+    {
+      "unitId": "battleship",
+      "col": 46,
+      "row": 9,
+      "role": "STRIKE"
+    },
+    {
+      "unitId": "battleship",
+      "col": 47,
+      "row": 22,
+      "role": "STRIKE"
+    }
+  ]
+}
